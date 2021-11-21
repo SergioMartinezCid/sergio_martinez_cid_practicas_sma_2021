@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  xmpp:
+    image: ejabberd/ecs:21.07
+    container_name: chatbot-xmpp
+    ports:
+      - "5222:5222"
+    volumes:
+      - "./xmpp/ejabberd.yml:/home/ejabberd/conf/ejabberd.yml"
+    healthcheck:
+      test: "bin/ejabberdctl status | grep 'is started with status: started'"
+      interval: 10s
+      timeout: 10s
+      retries: 15
+    networks:
+      - chatbot-network
+
+  app:
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    image: python
+    container_name: chatbot-app
+    entrypoint: ./entrypoint.sh
+    volumes:
+      - type: bind
+        source: ./src
+        target: /opt/app/
+    depends_on:
+      xmpp:
+        condition: service_healthy
+    networks:
+      - chatbot-network
+
+networks:
+  chatbot-network:
+    driver: bridge

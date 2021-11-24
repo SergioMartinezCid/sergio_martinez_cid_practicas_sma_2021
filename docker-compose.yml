@@ -16,6 +16,26 @@ services:
     networks:
       - chatbot-network
 
+  database:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    image: chatbot-database
+    container_name: chatbot-database
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chatbot-network
+
   app:
     build:
       context: ./src
@@ -34,6 +54,8 @@ services:
         target: /opt/app/environment
     depends_on:
       xmpp:
+        condition: service_healthy
+      database:
         condition: service_healthy
     networks:
       - chatbot-network

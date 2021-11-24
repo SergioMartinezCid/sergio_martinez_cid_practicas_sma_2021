@@ -1,12 +1,18 @@
+#!/usr/bin/env python3
+
 from spade import agent, quit_spade
 import json
-import time
+
+ENVIRONMENT_FOLDER = 'environment'
 
 # SPADE instalation
 # pip install spade
 class DummyAgent(agent.Agent):
     async def setup(self):
-        print("Hello World! I'm agent {}".format(str(self.jid)))
+        message = "[{jid}] '{message}'".format(jid = self.jid, message = input('Introduce the message: '))
+        print(message)
+        with open('{}/message.txt'.format(ENVIRONMENT_FOLDER), 'w') as outFile:
+            outFile.write(message)
 
 def main():
     # The agent must be registered in a XMPP server

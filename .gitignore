@@ -130,3 +130,7 @@ dmypy.json
 
 # Credentials
 credentials.json
+
+# Temporal files
+.vscode
+environment

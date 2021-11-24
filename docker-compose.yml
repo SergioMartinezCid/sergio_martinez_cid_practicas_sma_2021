@@ -20,13 +20,18 @@ services:
     build:
       context: ./src
       dockerfile: Dockerfile
-    image: python
+    image: chatbot-app
+    stdin_open: true
+    tty: true
     container_name: chatbot-app
-    entrypoint: ./entrypoint.sh
+    entrypoint: ./main.py
     volumes:
       - type: bind
         source: ./src
         target: /opt/app/
+      - type: bind
+        source: ./environment
+        target: /opt/app/environment
     depends_on:
       xmpp:
         condition: service_healthy

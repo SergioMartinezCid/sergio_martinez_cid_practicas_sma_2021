@@ -1,12 +1,19 @@
 full: clean build-start
 
-start:
-	docker-compose up --remove-orphans --abort-on-container-exit
+start: environment
+	@docker-compose run --rm --name chatbot-app app
+	@docker-compose down --remove-orphans
 
-build-start:
-	docker-compose up --build --remove-orphans --abort-on-container-exit
+build-start: environment
+	@docker-compose build
+	@docker-compose run --rm --name chatbot-app app
+	@docker-compose down --remove-orphans
 
 clean:
-	docker-compose down
+	@docker-compose down
+	@rm -rf environment/
+
+environment:
+	@mkdir environment
 
 .PHONY: full start build-start clean

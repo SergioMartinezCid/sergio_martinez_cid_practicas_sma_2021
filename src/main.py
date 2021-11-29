@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from spade import agent, quit_spade
 import json
+from spade import agent, quit_spade
 
 ENVIRONMENT_FOLDER = 'environment'
 
@@ -9,21 +9,21 @@ ENVIRONMENT_FOLDER = 'environment'
 # pip install spade
 class DummyAgent(agent.Agent):
     async def setup(self):
-        message = "[{jid}] '{message}'".format(jid = self.jid, message = input('Introduce the message: '))
+        message = f"[{self.jid}] '{input('Introduce the message: ')}'"
         print(message)
-        with open('{}/message.txt'.format(ENVIRONMENT_FOLDER), 'w') as outFile:
+        with open(f'{ENVIRONMENT_FOLDER}/message.txt', 'w', encoding='utf-8') as outFile:
             outFile.write(message)
 
 def main():
     # The agent must be registered in a XMPP server
 
     # Load the json file with the crendentials
-    f = open('credentials.json',)
-    data = json.load(f)
+    with open('credentials.json', 'r', encoding='utf8') as creedentials_file:
+        creedentials = json.load(creedentials_file)
 
-    # Create the agent
-    dummy = DummyAgent(data['user1']['username'],
-                            data['user1']['password'])
+        # Create the agent
+        dummy = DummyAgent(creedentials['user1']['username'],
+                                creedentials['user1']['password'])
 
     # Start the agent
     future = dummy.start()

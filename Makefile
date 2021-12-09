@@ -2,7 +2,7 @@ full: clean build-start
 
 start: environment
 	@docker-compose run --rm --name chatbot-app app
-	@docker-compose down --remove-orphans
+#	@docker-compose down --remove-orphans
 
 build-start: environment
 	@docker-compose build

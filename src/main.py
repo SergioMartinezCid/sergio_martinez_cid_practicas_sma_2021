@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+from time import sleep
 from spade import quit_spade
 from chatbot_agent import ChatbotAgent
 from user_agent import UserAgent
@@ -18,14 +19,17 @@ def main():
                             creedentials['chatbot']['password'])
 
     # Start the agents
-    chatbot.start().result()
     user.start().result()
+    chatbot.start().result()
 
     # Wait until the execution is finished
-    if user.is_alive():
-        user.assist_user_behaviour.join()
-    if chatbot.is_alive():
-        chatbot.handle_request_behaviour.join()
+    while chatbot.is_alive() or user.is_alive():
+        try:
+            sleep(1)
+        except KeyboardInterrupt:
+            chatbot.stop()
+            user.stop()
+            break
 
     # Stop the agents, just in case
     user.stop()

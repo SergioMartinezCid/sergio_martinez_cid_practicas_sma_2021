@@ -1,32 +1,59 @@
 import json
 from spade import agent
 from spade.message import Message
-from spade.behaviour import CyclicBehaviour
-
-class AssistUserBehaviour(CyclicBehaviour):
-    def __init__(self):
-        super().__init__()
-        with open('credentials.json', 'r', encoding='utf8') as creedentials_file:
-            creedentials = json.load(creedentials_file)
-        self.chatbot_address = creedentials['chatbot']['username']
-
-    async def run(self):
-        try:
-            message = input('You say: ')
-        except EOFError:
-            message = ''
-        msg = Message(to=self.chatbot_address)
-        msg.set_metadata("performative", "inform")
-        msg.set_metadata("language", "chatbot")
-        msg.body = message
-
-        await self.send(msg)
+from spade.behaviour import CyclicBehaviour, OneShotBehaviour
+from spade.template import Template
 
 class UserAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):
         super().__init__(jid, password, verify_security=verify_security)
-        self.assist_user_behaviour = None
+
+        with open('credentials.json', 'r', encoding='utf8') as creedentials_file:
+            creedentials = json.load(creedentials_file)
+        self.chatbot_address = creedentials['chatbot']['username']
 
     async def setup(self):
-        self.assist_user_behaviour = AssistUserBehaviour()
-        self.add_behaviour(self.assist_user_behaviour)
+        template = Template()
+        template.set_metadata("performative", "inform")
+        template.set_metadata("language", "chatbot-greeting")
+        self.add_behaviour(AwaitGreetingBehaviour(), template)
+
+class AwaitGreetingBehaviour(OneShotBehaviour):
+    async def run(self):
+        response = await self.receive(10000)
+        if response is None:
+            return
+        print(f'Bot says: {response.body}')
+
+        template = Template()
+        template.set_metadata("performative", "inform")
+        template.set_metadata("language", "chatbot-response")
+        self.agent.add_behaviour(AssistUserBehaviour(), template)
+
+        template = Template()
+        template.set_metadata("performative", "request")
+        template.set_metadata("language", "chatbot-exit")
+        self.agent.add_behaviour(ReceiveExitBehaviour(), template)
+
+class AssistUserBehaviour(CyclicBehaviour):
+    async def run(self):
+        try:
+            message_content = input('You say: ')
+        except EOFError:
+            message_content = ''
+        message = Message(to=self.agent.chatbot_address)
+        message.set_metadata("performative", "inform")
+        message.set_metadata("language", "chatbot-query")
+        message.body = message_content
+        await self.send(message)
+
+        response = await self.receive(10000)
+        if response is None:
+            return
+        print(f'Bot says: {response.body}')
+
+class ReceiveExitBehaviour(CyclicBehaviour):
+    async def run(self):
+        response = await self.receive(10000)
+        if response is not None:
+            await self.agent.stop()

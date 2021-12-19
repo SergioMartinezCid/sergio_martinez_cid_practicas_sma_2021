@@ -14,16 +14,16 @@ class ChatbotAgent(agent.Agent):
 
     async def setup(self):
         template = Template()
-        template.set_metadata("performative", "inform")
-        template.set_metadata("language", "chatbot-query")
+        template.set_metadata('performative', 'inform')
+        template.set_metadata('language', 'chatbot-query')
         self.add_behaviour(HandleRequestsBehaviour(), template)
         self.add_behaviour(SendGreetingBehaviour())
 
 class SendGreetingBehaviour(OneShotBehaviour):
     async def run(self):
         message = Message(to=self.agent.user_address)
-        message.set_metadata("performative", "inform")
-        message.set_metadata("language", "chatbot-greeting")
+        message.set_metadata('performative', 'inform')
+        message.set_metadata('language', 'chatbot-greeting')
         message.body = 'Hi Human! What do you want?'
         await self.send(message)
 
@@ -43,8 +43,8 @@ class HandleRequestsBehaviour(CyclicBehaviour):
 class SendExitBehaviour(OneShotBehaviour):
     async def run(self):
         message = Message(to=self.agent.user_address)
-        message.set_metadata("performative", "request")
-        message.set_metadata("language", "chatbot-exit")
+        message.set_metadata('performative', 'request')
+        message.set_metadata('language', 'chatbot-exit')
         message.body = ''
         await self.send(message)
         await self.agent.stop()
@@ -52,7 +52,7 @@ class SendExitBehaviour(OneShotBehaviour):
 class NotUnderstoodBehaviour(OneShotBehaviour):
     async def run(self):
         message = Message(to=self.agent.user_address)
-        message.set_metadata("performative", "inform")
-        message.set_metadata("language", "chatbot-response")
+        message.set_metadata('performative', 'inform')
+        message.set_metadata('language', 'chatbot-response')
         message.body = 'Message not understood'
         await self.send(message)

@@ -14,8 +14,8 @@ class UserAgent(agent.Agent):
 
     async def setup(self):
         template = Template()
-        template.set_metadata("performative", "inform")
-        template.set_metadata("language", "chatbot-greeting")
+        template.set_metadata('performative', 'inform')
+        template.set_metadata('language', 'chatbot-greeting')
         self.add_behaviour(AwaitGreetingBehaviour(), template)
 
 class AwaitGreetingBehaviour(OneShotBehaviour):
@@ -26,13 +26,13 @@ class AwaitGreetingBehaviour(OneShotBehaviour):
         print(f'Bot says: {response.body}')
 
         template = Template()
-        template.set_metadata("performative", "inform")
-        template.set_metadata("language", "chatbot-response")
+        template.set_metadata('performative', 'inform')
+        template.set_metadata('language', 'chatbot-response')
         self.agent.add_behaviour(AssistUserBehaviour(), template)
 
         template = Template()
-        template.set_metadata("performative", "request")
-        template.set_metadata("language", "chatbot-exit")
+        template.set_metadata('performative', 'request')
+        template.set_metadata('language', 'chatbot-exit')
         self.agent.add_behaviour(ReceiveExitBehaviour(), template)
 
 class AssistUserBehaviour(CyclicBehaviour):
@@ -42,8 +42,8 @@ class AssistUserBehaviour(CyclicBehaviour):
         except EOFError:
             message_content = ''
         message = Message(to=self.agent.chatbot_address)
-        message.set_metadata("performative", "inform")
-        message.set_metadata("language", "chatbot-query")
+        message.set_metadata('performative', 'inform')
+        message.set_metadata('language', 'chatbot-query')
         message.body = message_content
         await self.send(message)
 

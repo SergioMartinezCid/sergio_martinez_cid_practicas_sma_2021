@@ -2,33 +2,37 @@
 
 import json
 from spade import quit_spade
-from useragent import UserAgent
+from chatbot_agent import ChatbotAgent
+from user_agent import UserAgent
 
 
 def main():
-    # The agent must be registered in a XMPP server
-
     # Load the json file with the crendentials
     with open('credentials.json', 'r', encoding='utf8') as creedentials_file:
         creedentials = json.load(creedentials_file)
 
-        # Create the agent
-        user = UserAgent(creedentials['user1']['username'],
-                                creedentials['user1']['password'])
+    # Create the agents
+    user = UserAgent(creedentials['user']['username'],
+                            creedentials['user']['password'])
+    chatbot = ChatbotAgent(creedentials['chatbot']['username'],
+                            creedentials['chatbot']['password'])
 
-    # Start the agent
-    future = user.start()
-    future.result()
+    # Start the agents
+    chatbot.start().result()
+    user.start().result()
 
     # Wait until the execution is finished
-    user.assist_user_behaviour.join()
+    if user.is_alive():
+        user.assist_user_behaviour.join()
+    if chatbot.is_alive():
+        chatbot.handle_request_behaviour.join()
 
-    # Stop the agent
+    # Stop the agents, just in case
     user.stop()
+    chatbot.stop()
 
-    # Quit SPADE, optional, clean all the resources
+    # Quit SPADE, just in case, clean all the resources
     quit_spade()
-
     print('All agents are finished')
 
 if __name__=='__main__':

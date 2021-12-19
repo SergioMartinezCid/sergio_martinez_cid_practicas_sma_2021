@@ -4,8 +4,6 @@ services:
   xmpp:
     image: ejabberd/ecs:21.07
     container_name: chatbot-xmpp
-    ports:
-      - "5222:5222"
     volumes:
       - "./xmpp/ejabberd.yml:/home/ejabberd/conf/ejabberd.yml"
     healthcheck:
@@ -22,8 +20,6 @@ services:
       dockerfile: Dockerfile
     image: chatbot-database
     container_name: chatbot-database
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

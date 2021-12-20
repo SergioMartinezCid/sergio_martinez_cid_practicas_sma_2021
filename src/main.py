@@ -29,6 +29,7 @@ def main():
         except KeyboardInterrupt:
             chatbot.stop()
             user.stop()
+            print()
             break
 
     # Stop the agents, just in case

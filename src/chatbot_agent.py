@@ -1,12 +1,14 @@
 import json
 import re
+import urllib
 from time import gmtime, strftime
+import requests
+from bs4 import BeautifulSoup
 from spade import agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
-
-from const import ENVIRONMENT_FOLDER
+from const import ENVIRONMENT_FOLDER, SEARCH_PEOPLE_URL
 
 class ChatbotAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):
@@ -72,10 +74,18 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
         self.name = name
 
     async def run(self):
+        req = requests.get(SEARCH_PEOPLE_URL + urllib.parse.quote(self.name))
+        html = BeautifulSoup(req.content, 'html.parser')
+        first_paragraph = next(filter(lambda x: len(x.text) > 5,
+            html.find('div', {'id': 'mw-content-text'}).find_all('p')))
+
         message = Message(to=self.agent.user_address)
         message.set_metadata('performative', 'inform')
         message.set_metadata('language', 'chatbot-response')
-        message.body = 'who ' + self.name
+        if first_paragraph is None:
+            message.body = f'No information was found about {self.name}'
+        else:
+            message.body = re.sub(r'\[[^\[]*\]', '', first_paragraph.text).strip()
         await self.send(message)
 
 class MakeFileBehaviour(OneShotBehaviour):
@@ -88,8 +98,8 @@ class MakeFileBehaviour(OneShotBehaviour):
             with open(f'{ENVIRONMENT_FOLDER}/{self.name}', 'a', encoding='utf-8'):
                 pass
             message_body = f'Successfully created \'{self.name}\''
-        except OSError as e:
-            message_body = e.strerror
+        except OSError as error:
+            message_body = error.strerror
         message = Message(to=self.agent.user_address)
         message.set_metadata('performative', 'inform')
         message.set_metadata('language', 'chatbot-response')

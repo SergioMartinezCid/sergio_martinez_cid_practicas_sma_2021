@@ -12,6 +12,6 @@ clean:
 	@rm -rf environment/
 
 environment:
-	@mkdir environment
+	@mkdir environment 2> /dev/null || :
 
 .PHONY: full start build-start clean environment

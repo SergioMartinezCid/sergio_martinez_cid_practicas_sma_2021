@@ -47,7 +47,7 @@ services:
         target: /opt/app/
       - type: bind
         source: ./environment
-        target: /opt/app/environment
+        target: /opt/environment
     depends_on:
       xmpp:
         condition: service_healthy

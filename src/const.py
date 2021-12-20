@@ -1,1 +1,1 @@
-ENVIRONMENT_FOLDER = 'environment'
+ENVIRONMENT_FOLDER = '/opt/environment'

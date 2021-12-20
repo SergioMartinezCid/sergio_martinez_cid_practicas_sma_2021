@@ -14,4 +14,4 @@ clean:
 environment:
 	@mkdir environment
 
-.PHONY: full start build-start clean
+.PHONY: full start build-start clean environment

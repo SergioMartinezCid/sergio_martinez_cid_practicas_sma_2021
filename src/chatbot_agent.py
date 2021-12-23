@@ -1,6 +1,7 @@
 import json
 import re
 import urllib
+from functools import reduce
 from time import gmtime, strftime
 import requests
 from bs4 import BeautifulSoup
@@ -76,16 +77,26 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
     async def run(self):
         req = requests.get(SEARCH_PEOPLE_URL + urllib.parse.quote(self.name))
         html = BeautifulSoup(req.content, 'html.parser')
-        first_paragraph = next(filter(lambda x: len(x.text) > 5,
-            html.find('div', {'id': 'mw-content-text'}).find_all('p')))
+
+        content_text = html.find('div', {'id': 'mw-content-text'})
+
+        # Use a more general id if the previous one stops working
+        if content_text is None:
+            content = html.find('div', {'id': 'bodyContent'})
+            content_text = reduce(lambda x, y: x if len(x.text) > len(y.text) else y,
+                                    content.children)
+        first_paragraph = next(filter(lambda x: len(x.text) > 5, content_text.find_all('p')))
 
         message = Message(to=self.agent.user_address)
         message.set_metadata('performative', 'inform')
         message.set_metadata('language', 'chatbot-response')
-        if first_paragraph is None:
-            message.body = f'No information was found about {self.name}'
-        else:
-            message.body = re.sub(r'\[[^\[]*\]', '', first_paragraph.text).strip()
+
+        message.body = f'No information was found about "{self.name}"'
+        if first_paragraph is not None:
+            match = re.match(r'The page \".*\" does not exist\. You can ask for it to be created\.',
+                                first_paragraph.text.strip())
+            if match is None:
+                message.body = re.sub(r'\[[^\[]*\]', '', first_paragraph.text).strip()
         await self.send(message)
 
 class MakeFileBehaviour(OneShotBehaviour):

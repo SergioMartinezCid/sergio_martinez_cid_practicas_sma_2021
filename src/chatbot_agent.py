@@ -39,9 +39,9 @@ class HandleRequestsBehaviour(CyclicBehaviour):
     available_queries = {
         re.compile(r'\s*show\s*me\s*the\s*time\s*', re.I):
             (lambda _: ShowTimeBehaviour()),
-        re.compile(r'who\s*is\s*(.*)\s*', re.I):
+        re.compile(r'who\s*is\s*(\S.*)\s*', re.I):
             (lambda name: SearchPersonInfoBehaviour(name[0])),
-        re.compile(r'\s*create\s*file\s*named\s*(.*)\s*', re.I):
+        re.compile(r'\s*create\s*file\s*[\"\'](\S.*)[\"\']\s*', re.I):
             (lambda name: MakeFileBehaviour(name[0])),
         re.compile(r'\s*exit\s*', re.I):
             (lambda _: SendExitBehaviour()),

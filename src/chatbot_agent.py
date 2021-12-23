@@ -2,6 +2,7 @@ import json
 import re
 import urllib
 from functools import reduce
+from pathlib import Path
 from time import gmtime, strftime
 import requests
 from bs4 import BeautifulSoup
@@ -55,10 +56,10 @@ class HandleRequestsBehaviour(CyclicBehaviour):
         await action.join()
 
     def get_response_from_message(self, message):
-        for query in self.available_queries:
-            match = query.match(message)
+        for query_regex, behaviour_factory in self.available_queries.items():
+            match = query_regex.match(message)
             if match is not None:
-                return self.available_queries[query](match.groups())
+                return behaviour_factory(match.groups())
         return NotUnderstoodBehaviour()
 
 class ShowTimeBehaviour(OneShotBehaviour):
@@ -105,12 +106,31 @@ class MakeFileBehaviour(OneShotBehaviour):
         self.name = name
 
     async def run(self):
-        try:
-            with open(f'{ENVIRONMENT_FOLDER}/{self.name}', 'a', encoding='utf-8'):
-                pass
-            message_body = f'Successfully created \'{self.name}\''
-        except OSError as error:
-            message_body = error.strerror
+        file = Path(f'{ENVIRONMENT_FOLDER}/{self.name}')
+        parent_folder = Path(ENVIRONMENT_FOLDER).resolve()
+
+        if Path(self.name).is_absolute(): # Check if input was an absolute path
+            message_body = f'\'{self.name}\' is an absolute path, use a relative path instead'
+        elif file.exists():
+            if file.is_file():
+                message_body = f'\'{self.name}\' already exists'
+            elif file.exists() and file.is_dir():
+                message_body = f'\'{self.name}\' is a folder'
+        elif not file.resolve().is_relative_to(parent_folder):
+            message_body  = f'\'{self.name}\' should not access the parent folder of environment'
+        else:
+            try:
+                file = file.resolve()
+
+                if not file.parent.exists():
+                    file.parent.mkdir(parents=True, exist_ok=True)
+
+                # Create empty file
+                with file.open('a', encoding='utf-8'):
+                    pass
+                message_body = f'Successfully created \'{self.name}\''
+            except OSError as error:
+                message_body = error.strerror
         message = Message(to=self.agent.user_address)
         message.set_metadata('performative', 'inform')
         message.set_metadata('language', 'chatbot-response')

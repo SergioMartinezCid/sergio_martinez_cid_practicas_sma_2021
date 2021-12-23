@@ -48,6 +48,9 @@ services:
       - type: bind
         source: ./environment
         target: /opt/environment
+      - type: bind
+        source: ./logs
+        target: /opt/logs
     depends_on:
       xmpp:
         condition: service_healthy

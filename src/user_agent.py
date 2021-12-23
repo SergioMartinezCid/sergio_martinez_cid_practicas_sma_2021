@@ -6,6 +6,7 @@ from spade import agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.template import Template
+from const import TIMEOUT_SECONDS
 
 class UserAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):
@@ -23,7 +24,7 @@ class UserAgent(agent.Agent):
 
 class AwaitGreetingBehaviour(OneShotBehaviour):
     async def run(self):
-        response = await self.receive(10000)
+        response = await self.receive(TIMEOUT_SECONDS)
         if response is None:
             return
         print(f'Bot says: {response.body}')
@@ -50,13 +51,13 @@ class AssistUserBehaviour(CyclicBehaviour):
         message.body = message_content
         await self.send(message)
 
-        response = await self.receive(10000)
+        response = await self.receive(TIMEOUT_SECONDS)
         if response is None:
             return
         print(f'Bot says: {response.body}')
 
 class ReceiveExitBehaviour(CyclicBehaviour):
     async def run(self):
-        response = await self.receive(10000)
+        response = await self.receive(TIMEOUT_SECONDS)
         if response is not None:
             await self.agent.stop()

@@ -10,7 +10,7 @@ from spade import agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
-from const import ENVIRONMENT_FOLDER, SEARCH_PEOPLE_URL
+from const import ENVIRONMENT_FOLDER, SEARCH_PEOPLE_URL, TIMEOUT_SECONDS
 
 class ChatbotAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):
@@ -48,7 +48,7 @@ class HandleRequestsBehaviour(CyclicBehaviour):
     }
 
     async def run(self):
-        message = await self.receive(10000)
+        message = await self.receive(TIMEOUT_SECONDS)
         if message is None:
             return
         action = self.get_response_from_message(message.body)
@@ -118,7 +118,7 @@ class MakeFileBehaviour(OneShotBehaviour):
                 elif file.exists() and file.is_dir():
                     message_body = f'\'{self.name}\' is a folder'
             elif not file.resolve().is_relative_to(parent_folder):
-                message_body  = f'\'{self.name}\' should not access the parent folder of environment'
+                message_body = f'\'{self.name}\' should not access the parent folder of environment'
             else:
                 # Create empty file
                 file = file.resolve()

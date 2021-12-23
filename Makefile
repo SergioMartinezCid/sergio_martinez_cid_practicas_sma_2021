@@ -1,17 +1,17 @@
 full: clean build-start
 
-start: environment
+start: volume_folders
 	@docker-compose run --rm --name chatbot-app app
 
-build-start: environment
+build-start: volume_folders
 	@docker-compose build
 	@docker-compose run --rm --name chatbot-app app
 
 clean:
 	@docker-compose down
-	@rm -rf environment/
+	@rm -rf environment/ logs/
 
-environment:
-	@mkdir environment 2> /dev/null || :
+volume_folders:
+	@mkdir environment logs 2> /dev/null || :
 
-.PHONY: full start build-start clean environment
+.PHONY: full start build-start clean volume_folders

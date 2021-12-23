@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 
 import json
+import logging
 from time import sleep
 from spade import quit_spade
 from chatbot_agent import ChatbotAgent
+from const import LOG_FILE
 from user_agent import UserAgent
 
 
 def main():
+    logging.basicConfig(filename=LOG_FILE,
+                            filemode='a',
+                            format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                            datefmt='%H:%M:%S',
+                            level=logging.DEBUG)
     # Load the json file with the crendentials
     with open('credentials.json', 'r', encoding='utf8') as creedentials_file:
         creedentials = json.load(creedentials_file)

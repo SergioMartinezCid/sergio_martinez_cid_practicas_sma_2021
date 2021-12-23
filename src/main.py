@@ -45,6 +45,7 @@ def main():
 
     # Quit SPADE, just in case, clean all the resources
     quit_spade()
+    logging.shutdown()
     print('All agents are finished')
 
 if __name__=='__main__':

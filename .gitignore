@@ -134,3 +134,4 @@ credentials.json
 # Temporal files
 .vscode
 environment
+logs

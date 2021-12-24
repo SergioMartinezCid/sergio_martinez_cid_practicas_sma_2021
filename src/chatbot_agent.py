@@ -94,6 +94,8 @@ class SendFunctionalityBehaviour(OneShotBehaviour):
     Show you the time: "Show me the time"
     Look for information about someone: "Who is Barack Obama"
     Create an empty file: "Create file 'Very important file'"
+    Download gifs: "Download 10 gifs of potatoes"
+    Tell the joke of the day: "Tell me a joke"
     End the execution: "exit"''')
 
 class ShowTimeBehaviour(OneShotBehaviour):

@@ -10,7 +10,8 @@ from spade import agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
-from const import ENVIRONMENT_FOLDER, SEARCH_GIFS_URL, SEARCH_PEOPLE_URL, TIMEOUT_SECONDS
+from const import SEARCH_GIFS_URL, SEARCH_PEOPLE_URL, SEARCH_JOKES_URL
+from const import ENVIRONMENT_FOLDER, TIMEOUT_SECONDS
 
 class ChatbotAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):
@@ -57,21 +58,29 @@ class HandleRequestsBehaviour(CyclicBehaviour):
             (lambda matches: SearchPersonInfoBehaviour(matches[0])),
         re.compile(r'\s*create\s+file\s+\'(\S.*)\'\s*$', re.I):
             (lambda matches: MakeFileBehaviour(matches[0])),
-        re.compile(r'\s*(?:download\s)?\s*(\d+|some)\s+gifs\s+about\s+(\S.*)\s*$', re.I):
+        re.compile(r'\s*(?:download\s)?\s*(\d+|some)\s+gifs\s+(about|of)\s+(\S.*)\s*$', re.I):
             (lambda matches: DownloadGifsBehaviour(matches[0], matches[1])),
+        re.compile(r'\s*tell\s+(?:me\s)\s*a\s+joke\s*', re.I):
+            (lambda _: TellJokeOfTheDayBehaviour()),
         re.compile(r'\s*exit\s*', re.I):
             (lambda _: SendExitBehaviour()),
     }
+
+    def __init__(self):
+        super().__init__()
+        self.template_intermediate = Template()
+        self.template_intermediate.set_metadata('performative', 'inform')
+        self.template_intermediate.set_metadata('language', 'chatbot-intermediate-query')
 
     async def run(self):
         message = await self.receive(TIMEOUT_SECONDS)
         if message is None:
             return
         action = self.get_response_from_message(message.body)
-        self.agent.add_behaviour(action)
+        self.agent.add_behaviour(action, self.template_intermediate)
         await action.join()
 
-    def get_response_from_message(self, message):
+    def get_response_from_message(self, message) -> OneShotBehaviour:
         for query_regex, behaviour_factory in self.available_queries.items():
             match = query_regex.match(message)
             if match is not None:
@@ -170,10 +179,12 @@ class DownloadGifsBehaviour(OneShotBehaviour):
             await self.agent.send_response_message(self, 'Maximum number of gifs is 50')
             return
 
-        res = requests.get(SEARCH_GIFS_URL +
-            f'?key={self.agent.gif_api_key}&q={self.search_text}&limit={self.gif_count}' +
-            '&contentfilter=medium&media_filter=minimal')
-        results = json.loads(res.content.decode(encoding='utf-8'))['results']
+        response = requests.get(SEARCH_GIFS_URL +
+                    f'?key={self.agent.gif_api_key}&q={self.search_text}&limit={self.gif_count}' +
+                    '&contentfilter=medium&media_filter=minimal') \
+                .json()
+        
+        results = response['results']
 
         if len(results) <= 0:
             await self.agent.send_response_message(self,
@@ -194,6 +205,52 @@ class DownloadGifsBehaviour(OneShotBehaviour):
 
         await self.agent.send_response_message(self,
             f'Successfully downloaded gifs about \'{self.search_text}\'')
+
+class TellJokeOfTheDayBehaviour(OneShotBehaviour):
+    headers = {'content-type': 'application/json'}
+
+    async def run(self):
+        response = requests.get(SEARCH_JOKES_URL + '/categories', headers=self.headers) \
+                        .json()
+        if 'error' in response:
+            await self.agent.send_response_message(self,
+                'Too many joke requests within the last hour')
+            return
+
+        categories = response['contents']['categories']
+        selected_category = await self.ask_for_category(categories)
+
+        response = requests.get(SEARCH_JOKES_URL + f'?category={selected_category}',
+                    headers=self.headers).json()
+
+        if 'error' in response:
+            await self.agent.send_response_message(self,
+                'Too many joke requests within the last hour')
+            return
+
+        jokes = response['contents']['jokes']
+
+        if len(jokes) <= 0:
+            await self.agent.send_response_message(self,
+                'There was an error retrieving the joke of the day')
+        else:
+            await self.agent.send_response_message(self,
+                jokes[0]['joke']['text'].strip())
+
+    async def ask_for_category(self, categories):
+        valid_categories = set(map(lambda x: x['name'], categories))
+        ask_message = 'Select a joke category:'
+        for category in categories:
+            ask_message += f"\n\t{category['name']}: {category['description']}"
+
+        selected_category = ''
+        while selected_category not in valid_categories:
+            await self.agent.send_response_message(self, ask_message,
+                language='chatbot-intermediate-response')
+            response = await self.receive(TIMEOUT_SECONDS)
+            if response:
+                selected_category = response.body
+        return selected_category
 
 class SendExitBehaviour(OneShotBehaviour):
     async def run(self):

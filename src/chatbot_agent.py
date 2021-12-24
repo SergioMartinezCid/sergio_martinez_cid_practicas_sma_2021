@@ -58,9 +58,9 @@ class HandleRequestsBehaviour(CyclicBehaviour):
             (lambda matches: SearchPersonInfoBehaviour(matches[0])),
         re.compile(r'\s*create\s+file\s+\'(\S.*)\'\s*$', re.I):
             (lambda matches: MakeFileBehaviour(matches[0])),
-        re.compile(r'\s*(?:download\s)?\s*(\d+|some)\s+gifs\s+(about|of)\s+(\S.*)\s*$', re.I):
+        re.compile(r'\s*(?:download\s)?\s*(\d+|some)\s+gifs\s+(?:about|of)\s+(\S.*)\s*$', re.I):
             (lambda matches: DownloadGifsBehaviour(matches[0], matches[1])),
-        re.compile(r'\s*tell\s+(?:me\s)\s*a\s+joke\s*', re.I):
+        re.compile(r'\s*tell\s+(?:me\s)?\s*a\s+joke\s*', re.I):
             (lambda _: TellJokeOfTheDayBehaviour()),
         re.compile(r'\s*exit\s*', re.I):
             (lambda _: SendExitBehaviour()),
@@ -183,7 +183,7 @@ class DownloadGifsBehaviour(OneShotBehaviour):
                     f'?key={self.agent.gif_api_key}&q={self.search_text}&limit={self.gif_count}' +
                     '&contentfilter=medium&media_filter=minimal') \
                 .json()
-        
+
         results = response['results']
 
         if len(results) <= 0:

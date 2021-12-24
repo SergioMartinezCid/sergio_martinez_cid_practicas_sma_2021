@@ -37,12 +37,14 @@ class SendGreetingBehaviour(OneShotBehaviour):
 
 class HandleRequestsBehaviour(CyclicBehaviour):
     available_queries = {
-        re.compile(r'\s*show\s*me\s*the\s*time\s*', re.I):
+        re.compile(r'\s*what\s+can\s+you\s+do\s*\??\s*$', re.I):
+            (lambda _: SendFunctionalityBehaviour()),
+        re.compile(r'\s*show\s+me\s+the\s+time\s*$', re.I):
             (lambda _: ShowTimeBehaviour()),
-        re.compile(r'who\s*is\s*(\S.*)\s*', re.I):
-            (lambda name: SearchPersonInfoBehaviour(name[0])),
-        re.compile(r'\s*create\s*file\s*\'(\S.*)\'\s*', re.I):
-            (lambda name: MakeFileBehaviour(name[0])),
+        re.compile(r'\s*who\s+is\s+(\S.*?)\s*\??\s*$', re.I):
+            (lambda matches: SearchPersonInfoBehaviour(matches[0])),
+        re.compile(r'\s*create\s+file\s+\'(\S.*)\'\s*$', re.I):
+            (lambda matches: MakeFileBehaviour(matches[0])),
         re.compile(r'\s*exit\s*', re.I):
             (lambda _: SendExitBehaviour()),
     }
@@ -62,6 +64,18 @@ class HandleRequestsBehaviour(CyclicBehaviour):
                 return behaviour_factory(match.groups())
         return NotUnderstoodBehaviour()
 
+class SendFunctionalityBehaviour(OneShotBehaviour):
+    async def run(self):
+        message = Message(to=self.agent.user_address)
+        message.set_metadata('performative', 'inform')
+        message.set_metadata('language', 'chatbot-response')
+        message.body = '''I can do the following
+    Show you this message: "What can you do?"
+    Show you the time: "Show me the time"
+    Look for information about someone: "Who is Barack Obama"
+    Create an empty file: "Create file 'Very important file'"
+    End the execution: "exit"'''
+        await self.send(message)
 class ShowTimeBehaviour(OneShotBehaviour):
     async def run(self):
         message = Message(to=self.agent.user_address)
@@ -103,7 +117,7 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
 
         message.body = f'No information was found about "{self.name}"'
         if first_paragraph is not None:
-            match = re.match(r'The page \".*\" does not exist\. You can ask for it to be created\.',
+            match = re.match(r'The page \".*\" does not exist\. You can ask for it to be created',
                                 first_paragraph.text.strip())
             if match is None:
                 message.body = re.sub(r'\[[^\[]*\]', '', first_paragraph.text).strip()

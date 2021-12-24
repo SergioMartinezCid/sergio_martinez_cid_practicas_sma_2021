@@ -98,8 +98,8 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
         self.name = name
 
     async def run(self):
-        req = requests.get(SEARCH_PEOPLE_URL + f'?search={urllib.parse.quote(self.name)}')
-        html = BeautifulSoup(req.content, 'html.parser')
+        res = requests.get(SEARCH_PEOPLE_URL + f'?search={urllib.parse.quote(self.name)}')
+        html = BeautifulSoup(res.content, 'html.parser')
 
         # Check whether the result is ambiguous
         if html.find('div', {'id': 'disambigbox'}) is not None:
@@ -170,10 +170,10 @@ class DownloadGifsBehaviour(OneShotBehaviour):
             await self.agent.send_response_message(self, 'Maximum number of gifs is 50')
             return
 
-        req = requests.get(SEARCH_GIFS_URL +
+        res = requests.get(SEARCH_GIFS_URL +
             f'?key={self.agent.gif_api_key}&q={self.search_text}&limit={self.gif_count}' +
             '&contentfilter=medium&media_filter=minimal')
-        results = json.loads(req.content.decode(encoding='utf-8'))['results']
+        results = json.loads(res.content.decode(encoding='utf-8'))['results']
 
         if len(results) <= 0:
             await self.agent.send_response_message(self,

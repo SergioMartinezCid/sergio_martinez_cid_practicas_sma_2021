@@ -41,7 +41,7 @@ class HandleRequestsBehaviour(CyclicBehaviour):
             (lambda _: ShowTimeBehaviour()),
         re.compile(r'who\s*is\s*(\S.*)\s*', re.I):
             (lambda name: SearchPersonInfoBehaviour(name[0])),
-        re.compile(r'\s*create\s*file\s*[\"\'](\S.*)[\"\']\s*', re.I):
+        re.compile(r'\s*create\s*file\s*\'(\S.*)\'\s*', re.I):
             (lambda name: MakeFileBehaviour(name[0])),
         re.compile(r'\s*exit\s*', re.I):
             (lambda _: SendExitBehaviour()),
@@ -78,6 +78,15 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
     async def run(self):
         req = requests.get(SEARCH_PEOPLE_URL + urllib.parse.quote(self.name))
         html = BeautifulSoup(req.content, 'html.parser')
+
+        # Check whether the result is ambiguous
+        if html.find('div', {'id': 'disambigbox'}) is not None:
+            message = Message(to=self.agent.user_address)
+            message.set_metadata('performative', 'inform')
+            message.set_metadata('language', 'chatbot-response')
+            message.body = f'The name "{self.name}" is too ambiguous'
+            await self.send(message)
+            return
 
         content_text = html.find('div', {'id': 'mw-content-text'})
 

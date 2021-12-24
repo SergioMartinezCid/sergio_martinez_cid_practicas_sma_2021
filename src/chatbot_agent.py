@@ -27,6 +27,14 @@ class ChatbotAgent(agent.Agent):
         self.add_behaviour(HandleRequestsBehaviour(), template)
         self.add_behaviour(SendGreetingBehaviour())
 
+    async def send_response_message(self, behaviour, body,
+                    performative='inform', language='chatbot-response'):
+        message = Message(to=self.user_address)
+        message.set_metadata('performative',performative)
+        message.set_metadata('language',language)
+        message.body = body
+        await behaviour.send(message)
+
 class SendGreetingBehaviour(OneShotBehaviour):
     async def run(self):
         message = Message(to=self.agent.user_address)
@@ -66,23 +74,17 @@ class HandleRequestsBehaviour(CyclicBehaviour):
 
 class SendFunctionalityBehaviour(OneShotBehaviour):
     async def run(self):
-        message = Message(to=self.agent.user_address)
-        message.set_metadata('performative', 'inform')
-        message.set_metadata('language', 'chatbot-response')
-        message.body = '''I can do the following
+        await self.agent.send_response_message(self, '''I can do the following
     Show you this message: "What can you do?"
     Show you the time: "Show me the time"
     Look for information about someone: "Who is Barack Obama"
     Create an empty file: "Create file 'Very important file'"
-    End the execution: "exit"'''
-        await self.send(message)
+    End the execution: "exit"''')
+
 class ShowTimeBehaviour(OneShotBehaviour):
     async def run(self):
-        message = Message(to=self.agent.user_address)
-        message.set_metadata('performative', 'inform')
-        message.set_metadata('language', 'chatbot-response')
-        message.body = 'The time is ' + strftime("%d-%m-%Y %H:%M:%S", gmtime())
-        await self.send(message)
+        await self.agent.send_response_message(self,
+            'The time is ' + strftime("%d-%m-%Y %H:%M:%S", gmtime()))
 
 class SearchPersonInfoBehaviour(OneShotBehaviour):
     def __init__(self, name):
@@ -95,11 +97,8 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
 
         # Check whether the result is ambiguous
         if html.find('div', {'id': 'disambigbox'}) is not None:
-            message = Message(to=self.agent.user_address)
-            message.set_metadata('performative', 'inform')
-            message.set_metadata('language', 'chatbot-response')
-            message.body = f'The name "{self.name}" is too ambiguous'
-            await self.send(message)
+            await self.agent.send_response_message(self,
+                f'The name "{self.name}" is too ambiguous')
             return
 
         content_text = html.find('div', {'id': 'mw-content-text'})
@@ -111,17 +110,15 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
                                     content.children)
         first_paragraph = next(filter(lambda x: len(x.text) > 5, content_text.find_all('p')))
 
-        message = Message(to=self.agent.user_address)
-        message.set_metadata('performative', 'inform')
-        message.set_metadata('language', 'chatbot-response')
-
-        message.body = f'No information was found about "{self.name}"'
         if first_paragraph is not None:
             match = re.match(r'The page \".*\" does not exist\. You can ask for it to be created',
                                 first_paragraph.text.strip())
             if match is None:
-                message.body = re.sub(r'\[[^\[]*\]', '', first_paragraph.text).strip()
-        await self.send(message)
+                await self.agent.send_response_message(self,
+                    re.sub(r'\[[^\[]*\]', '', first_paragraph.text).strip())
+                return
+        await self.agent.send_response_message(self,
+            f'No information was found about "{self.name}"')
 
 class MakeFileBehaviour(OneShotBehaviour):
     def __init__(self, name):
@@ -154,25 +151,15 @@ class MakeFileBehaviour(OneShotBehaviour):
                 message_body = f'Successfully created \'{self.name}\''
         except OSError as error:
             message_body = error.strerror
-        message = Message(to=self.agent.user_address)
-        message.set_metadata('performative', 'inform')
-        message.set_metadata('language', 'chatbot-response')
-        message.body = message_body
-        await self.send(message)
+        await self.agent.send_response_message(self, message_body)
+
 
 class SendExitBehaviour(OneShotBehaviour):
     async def run(self):
-        message = Message(to=self.agent.user_address)
-        message.set_metadata('performative', 'request')
-        message.set_metadata('language', 'chatbot-exit')
-        message.body = ''
-        await self.send(message)
+        await self.agent.send_response_message(self, '',
+            performative='request', language='chatbot-exit')
         await self.agent.stop()
 
 class NotUnderstoodBehaviour(OneShotBehaviour):
     async def run(self):
-        message = Message(to=self.agent.user_address)
-        message.set_metadata('performative', 'inform')
-        message.set_metadata('language', 'chatbot-response')
-        message.body = 'Message not understood'
-        await self.send(message)
+        await self.agent.send_response_message(self, 'Message not understood')

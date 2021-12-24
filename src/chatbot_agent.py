@@ -182,7 +182,9 @@ class DownloadGifsBehaviour(OneShotBehaviour):
         result_urls = map(lambda result: result['media'][0]['gif']['url'], results)
         for index, result_url in enumerate(result_urls):
             res = requests.get(result_url, stream=True)
-            gif_path = Path(f'{ENVIRONMENT_FOLDER}/{self.search_text}/{index}.gif').resolve()
+            folder_name = ''.join(x if x.isalnum() or x in '-_.() ' else '_'
+                for x in self.search_text)
+            gif_path = Path(f'{ENVIRONMENT_FOLDER}/{folder_name}/{index}.gif').resolve()
             if not gif_path.parent.exists():
                 gif_path.parent.mkdir(parents=True, exist_ok=True)
             with gif_path.open('wb') as gif_file:

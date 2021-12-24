@@ -56,7 +56,7 @@ class HandleRequestsBehaviour(CyclicBehaviour):
             (lambda _: ShowTimeBehaviour()),
         re.compile(r'\s*who\s+is\s+(\S.*?)\s*\??\s*$', re.I):
             (lambda matches: SearchPersonInfoBehaviour(matches[0])),
-        re.compile(r'\s*create\s+file\s+\'(\S.*)\'\s*$', re.I):
+        re.compile(r'\s*(?:create|make)\s+file\s+\'(\S.*)\'\s*$', re.I):
             (lambda matches: MakeFileBehaviour(matches[0])),
         re.compile(r'\s*(?:download\s)?\s*(\d+|some)\s+gifs\s+(?:about|of)\s+(\S.*)\s*$', re.I):
             (lambda matches: DownloadGifsBehaviour(matches[0], matches[1])),
@@ -197,7 +197,7 @@ class DownloadGifsBehaviour(OneShotBehaviour):
             res = requests.get(result_url, stream=True)
             folder_name = ''.join(x if x.isalnum() or x in '-_.() ' else '_'
                 for x in self.search_text)
-            gif_path = Path(f'{ENVIRONMENT_FOLDER}/{folder_name}/{index}.gif').resolve()
+            gif_path = Path(f'{ENVIRONMENT_FOLDER}/{folder_name}/{index+1}.gif').resolve()
             if not gif_path.parent.exists():
                 gif_path.parent.mkdir(parents=True, exist_ok=True)
             with gif_path.open('wb') as gif_file:

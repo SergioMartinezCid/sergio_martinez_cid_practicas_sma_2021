@@ -47,10 +47,9 @@ def main():
     quit_spade()
     print('All agents are finished')
 
-    # Avoid async logging
-    # https://bugs.python.org/issue26789
-    # Upgrading to python 3.10 is not viable, since
-    # SPADE has some issues with it
+    # Disable logging before shutdown to avoid async logging
+    # https://bugs.python.org/issue26789 (Upgrading to python 3.10
+    # is not viable, since SPADE has some issues with it)
     logging.disable()
 
 if __name__=='__main__':

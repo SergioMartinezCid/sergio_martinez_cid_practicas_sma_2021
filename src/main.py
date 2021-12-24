@@ -14,7 +14,7 @@ def main():
                             filemode='a',
                             format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                             datefmt='%H:%M:%S',
-                            level=logging.DEBUG)
+                            level=logging.WARNING)
     # Load the json file with the crendentials
     with open('credentials.json', 'r', encoding='utf8') as creedentials_file:
         creedentials = json.load(creedentials_file)
@@ -45,8 +45,13 @@ def main():
 
     # Quit SPADE, just in case, clean all the resources
     quit_spade()
-    logging.shutdown()
     print('All agents are finished')
+
+    # Avoid async logging
+    # https://bugs.python.org/issue26789
+    # Upgrading to python 3.10 is not viable, since
+    # SPADE has some issues with it
+    logging.disable()
 
 if __name__=='__main__':
     main()

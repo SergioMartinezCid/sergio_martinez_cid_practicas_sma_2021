@@ -10,7 +10,7 @@ from spade import agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
-from const import ENVIRONMENT_FOLDER, SEARCH_PEOPLE_URL, TIMEOUT_SECONDS
+from const import ENVIRONMENT_FOLDER, SEARCH_GIFS_URL, SEARCH_PEOPLE_URL, TIMEOUT_SECONDS
 
 class ChatbotAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):
@@ -19,6 +19,10 @@ class ChatbotAgent(agent.Agent):
         with open('credentials.json', 'r', encoding='utf8') as creedentials_file:
             creedentials = json.load(creedentials_file)
         self.user_address = creedentials['user']['username']
+
+        with open('api_keys.json', 'r', encoding='utf-8') as api_keys_file:
+            api_keys = json.load(api_keys_file)
+        self.gif_api_key = api_keys['tenor.com']
 
     async def setup(self):
         template = Template()
@@ -53,6 +57,8 @@ class HandleRequestsBehaviour(CyclicBehaviour):
             (lambda matches: SearchPersonInfoBehaviour(matches[0])),
         re.compile(r'\s*create\s+file\s+\'(\S.*)\'\s*$', re.I):
             (lambda matches: MakeFileBehaviour(matches[0])),
+        re.compile(r'\s*(?:download\s)?\s*(\d+|some)\s+gifs\s+about\s+(\S.*)\s*$', re.I):
+            (lambda matches: DownloadGifsBehaviour(matches[0], matches[1])),
         re.compile(r'\s*exit\s*', re.I):
             (lambda _: SendExitBehaviour()),
     }
@@ -92,7 +98,7 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
         self.name = name
 
     async def run(self):
-        req = requests.get(SEARCH_PEOPLE_URL + urllib.parse.quote(self.name))
+        req = requests.get(SEARCH_PEOPLE_URL + f'?search={urllib.parse.quote(self.name)}')
         html = BeautifulSoup(req.content, 'html.parser')
 
         # Check whether the result is ambiguous
@@ -153,6 +159,39 @@ class MakeFileBehaviour(OneShotBehaviour):
             message_body = error.strerror
         await self.agent.send_response_message(self, message_body)
 
+class DownloadGifsBehaviour(OneShotBehaviour):
+    def __init__(self, gif_count, search_text):
+        super().__init__()
+        self.gif_count = int(gif_count) if gif_count.isdigit() else 5
+        self.search_text = search_text
+
+    async def run(self):
+        if self.gif_count > 50:
+            await self.agent.send_response_message(self, 'Maximum number of gifs is 50')
+            return
+
+        req = requests.get(SEARCH_GIFS_URL +
+            f'?key={self.agent.gif_api_key}&q={self.search_text}&limit={self.gif_count}' +
+            '&contentfilter=medium&media_filter=minimal')
+        results = json.loads(req.content.decode(encoding='utf-8'))['results']
+
+        if len(results) <= 0:
+            await self.agent.send_response_message(self,
+                f'No results were found about {self.search_text}')
+            return
+        result_urls = map(lambda result: result['media'][0]['gif']['url'], results)
+        for index, result_url in enumerate(result_urls):
+            res = requests.get(result_url, stream=True)
+            gif_path = Path(f'{ENVIRONMENT_FOLDER}/{self.search_text}/{index}.gif').resolve()
+            if not gif_path.parent.exists():
+                gif_path.parent.mkdir(parents=True, exist_ok=True)
+            with gif_path.open('wb') as gif_file:
+                for chunk in res.iter_content(chunk_size=1024):
+                    if chunk:
+                        gif_file.write(chunk)
+
+        await self.agent.send_response_message(self,
+            f'Successfully downloaded gifs about \'{self.search_text}\'')
 
 class SendExitBehaviour(OneShotBehaviour):
     async def run(self):

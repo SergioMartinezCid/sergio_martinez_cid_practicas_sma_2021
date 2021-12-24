@@ -128,8 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Credentials
+# Secrets
 credentials.json
+api_keys.json
 
 # Temporal files
 .vscode

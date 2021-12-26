@@ -15,6 +15,8 @@ from sqlalchemy.sql.expression import select
 from const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, ENVIRONMENT_FOLDER
 from const import TIMEOUT_SECONDS
 from entities import BaseUrl, engine
+from entities.functionality_regex import FunctionalityRegex
+from functionality import Functionality
 
 class ChatbotAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):
@@ -60,21 +62,15 @@ class SendGreetingBehaviour(OneShotBehaviour):
         await self.send(message)
 
 class HandleRequestsBehaviour(CyclicBehaviour):
-    available_queries = {
-        re.compile(r'\s*what\s+can\s+you\s+do\s*\??\s*$', re.I):
-            (lambda _: SendFunctionalityBehaviour()),
-        re.compile(r'\s*show\s+me\s+the\s+time\s*$', re.I):
-            (lambda _: ShowTimeBehaviour()),
-        re.compile(r'\s*who\s+is\s+(\S.*?)\s*\??\s*$', re.I):
-            (lambda matches: SearchPersonInfoBehaviour(matches[0])),
-        re.compile(r'\s*(?:create|make)\s+file\s+\'(\S.*)\'\s*$', re.I):
-            (lambda matches: MakeFileBehaviour(matches[0])),
-        re.compile(r'\s*(?:download\s)?\s*(\d+|some)\s+gifs\s+(?:about|of)\s+(\S.*)\s*$', re.I):
+    functionality_to_behaviour = {
+        Functionality.SEND_FUNCTIONALITY: (lambda _: SendFunctionalityBehaviour()),
+        Functionality.SHOW_TIME: (lambda _: ShowTimeBehaviour()),
+        Functionality.SEARCH_PERSON_INFO: (lambda matches: SearchPersonInfoBehaviour(matches[0])),
+        Functionality.MAKE_FILE: (lambda matches: MakeFileBehaviour(matches[0])),
+        Functionality.DOWNLOAD_GIFS:
             (lambda matches: DownloadGifsBehaviour(matches[0], matches[1])),
-        re.compile(r'\s*tell\s+(?:me\s)?\s*a\s+joke\s*', re.I):
-            (lambda _: TellJokeOfTheDayBehaviour()),
-        re.compile(r'\s*exit\s*', re.I):
-            (lambda _: SendExitBehaviour()),
+        Functionality.TELL_JOKE_OF_THE_DAY: (lambda _: TellJokeOfTheDayBehaviour()),
+        Functionality.SEND_EXIT: (lambda _: SendExitBehaviour()),
     }
 
     def __init__(self):
@@ -82,6 +78,12 @@ class HandleRequestsBehaviour(CyclicBehaviour):
         self.template_intermediate = Template()
         self.template_intermediate.set_metadata('performative', 'inform')
         self.template_intermediate.set_metadata('language', 'chatbot-intermediate-query')
+
+        with Session(engine) as session:
+            raw_functionality_regex = session.execute(
+                select(FunctionalityRegex.regex, FunctionalityRegex.functionality)).all()
+            self.functionality_regex = dict(map(lambda x: (re.compile(x[0], re.I), x[1]),
+                                                raw_functionality_regex))
 
     async def run(self):
         message = await self.receive(TIMEOUT_SECONDS)
@@ -92,10 +94,10 @@ class HandleRequestsBehaviour(CyclicBehaviour):
         await action.join()
 
     def get_response_from_message(self, message) -> OneShotBehaviour:
-        for query_regex, behaviour_factory in self.available_queries.items():
-            match = query_regex.match(message)
+        for regex, functionality in self.functionality_regex.items():
+            match = regex.match(message)
             if match is not None:
-                return behaviour_factory(match.groups())
+                return self.functionality_to_behaviour[functionality](match.groups())
         return NotUnderstoodBehaviour()
 
 class SendFunctionalityBehaviour(OneShotBehaviour):
@@ -120,7 +122,7 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
         self.name = name
 
     async def run(self):
-        res = requests.get(self.agent.search_people_url + 
+        res = requests.get(self.agent.search_people_url +
             f'?search={urllib.parse.quote(self.name)}')
         html = BeautifulSoup(res.content, 'html.parser')
 

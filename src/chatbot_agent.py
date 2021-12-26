@@ -11,17 +11,18 @@ from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
 from const import SEARCH_GIFS_URL, SEARCH_PEOPLE_URL, SEARCH_JOKES_URL
-from const import ENVIRONMENT_FOLDER, TIMEOUT_SECONDS
+from const import API_KEYS_FILE, CREDENTIALS_FILE, ENVIRONMENT_FOLDER
+from const import TIMEOUT_SECONDS
 
 class ChatbotAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):
         super().__init__(jid, password, verify_security=verify_security)
 
-        with open('credentials.json', 'r', encoding='utf8') as creedentials_file:
+        with open(CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:
             creedentials = json.load(creedentials_file)
         self.user_address = creedentials['user']['username']
 
-        with open('api_keys.json', 'r', encoding='utf-8') as api_keys_file:
+        with open(API_KEYS_FILE, 'r', encoding='utf-8') as api_keys_file:
             api_keys = json.load(api_keys_file)
         self.gif_api_key = api_keys['tenor.com']
 

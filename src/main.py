@@ -5,7 +5,7 @@ import logging
 from time import sleep
 from spade import quit_spade
 from chatbot_agent import ChatbotAgent
-from const import LOG_FILE
+from const import CREDENTIALS_FILE, LOG_FILE
 from user_agent import UserAgent
 
 
@@ -16,7 +16,7 @@ def main():
                             datefmt='%H:%M:%S',
                             level=logging.WARNING)
     # Load the json file with the crendentials
-    with open('credentials.json', 'r', encoding='utf8') as creedentials_file:
+    with open(CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:
         creedentials = json.load(creedentials_file)
 
     # Create the agents

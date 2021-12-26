@@ -6,13 +6,13 @@ from spade import agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.template import ORTemplate, Template
-from const import TIMEOUT_SECONDS
+from const import CREDENTIALS_FILE, TIMEOUT_SECONDS
 
 class UserAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):
         super().__init__(jid, password, verify_security=verify_security)
 
-        with open('credentials.json', 'r', encoding='utf8') as creedentials_file:
+        with open(CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:
             creedentials = json.load(creedentials_file)
         self.chatbot_address = creedentials['chatbot']['username']
 

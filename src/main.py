@@ -5,18 +5,26 @@ import logging
 from time import sleep
 from spade import quit_spade
 from chatbot_agent import ChatbotAgent
-from const import CREDENTIALS_FILE, LOG_FILE
+from const import AGENT_CREDENTIALS_FILE, LOG_FILE
+from entities import initialize_database
 from user_agent import UserAgent
 
 
 def main():
+    # Configure logging
+    level = logging.INFO
     logging.basicConfig(filename=LOG_FILE,
                             filemode='a',
                             format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                             datefmt='%H:%M:%S',
-                            level=logging.WARNING)
+                            level=level)
+    logging.getLogger('sqlalchemy').setLevel(level)
+
+    # Load the database
+    initialize_database()
+
     # Load the json file with the crendentials
-    with open(CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:
+    with open(AGENT_CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:
         creedentials = json.load(creedentials_file)
 
     # Create the agents

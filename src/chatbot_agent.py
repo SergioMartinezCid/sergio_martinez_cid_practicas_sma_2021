@@ -10,21 +10,31 @@ from spade import agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
-from const import SEARCH_GIFS_URL, SEARCH_PEOPLE_URL, SEARCH_JOKES_URL
-from const import API_KEYS_FILE, CREDENTIALS_FILE, ENVIRONMENT_FOLDER
+from sqlalchemy.orm import Session
+from sqlalchemy.sql.expression import select
+from const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, ENVIRONMENT_FOLDER
 from const import TIMEOUT_SECONDS
+from entities import BaseUrl, engine
 
 class ChatbotAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):
         super().__init__(jid, password, verify_security=verify_security)
 
-        with open(CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:
+        with open(AGENT_CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:
             creedentials = json.load(creedentials_file)
         self.user_address = creedentials['user']['username']
 
         with open(API_KEYS_FILE, 'r', encoding='utf-8') as api_keys_file:
             api_keys = json.load(api_keys_file)
         self.gif_api_key = api_keys['tenor.com']
+
+        with Session(engine) as session:
+            self.search_gifs_url = session.execute(select(BaseUrl.url)
+                .where(BaseUrl.id == 'SEARCH_GIFS_URL')).first()[0]
+            self.search_people_url = session.execute(select(BaseUrl.url)
+                .where(BaseUrl.id == 'SEARCH_PEOPLE_URL')).first()[0]
+            self.search_jokes_url = session.execute(select(BaseUrl.url)
+                .where(BaseUrl.id == 'SEARCH_JOKES_URL')).first()[0]
 
     async def setup(self):
         template = Template()
@@ -110,7 +120,8 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
         self.name = name
 
     async def run(self):
-        res = requests.get(SEARCH_PEOPLE_URL + f'?search={urllib.parse.quote(self.name)}')
+        res = requests.get(self.agent.search_people_url + 
+            f'?search={urllib.parse.quote(self.name)}')
         html = BeautifulSoup(res.content, 'html.parser')
 
         # Check whether the result is ambiguous
@@ -182,7 +193,7 @@ class DownloadGifsBehaviour(OneShotBehaviour):
             await self.agent.send_response_message(self, 'Maximum number of gifs is 50')
             return
 
-        response = requests.get(SEARCH_GIFS_URL +
+        response = requests.get(self.agent.search_gifs_url +
                     f'?key={self.agent.gif_api_key}&q={self.search_text}&limit={self.gif_count}' +
                     '&contentfilter=medium&media_filter=minimal') \
                 .json()
@@ -213,7 +224,7 @@ class TellJokeOfTheDayBehaviour(OneShotBehaviour):
     headers = {'content-type': 'application/json'}
 
     async def run(self):
-        response = requests.get(SEARCH_JOKES_URL + '/categories', headers=self.headers) \
+        response = requests.get(self.agent.search_jokes_url + '/categories', headers=self.headers) \
                         .json()
         if 'error' in response:
             await self.agent.send_response_message(self,
@@ -223,7 +234,7 @@ class TellJokeOfTheDayBehaviour(OneShotBehaviour):
         categories = response['contents']['categories']
         selected_category = await self.ask_for_category(categories)
 
-        response = requests.get(SEARCH_JOKES_URL + f'?category={selected_category}',
+        response = requests.get(self.agent.search_jokes_url + f'?category={selected_category}',
                     headers=self.headers).json()
 
         if 'error' in response:

@@ -129,7 +129,8 @@ dmypy.json
 .pyre/
 
 # Secrets
-credentials.json
+agent_credentials.json
+db_credentials.json
 api_keys.json
 
 # Temporal files

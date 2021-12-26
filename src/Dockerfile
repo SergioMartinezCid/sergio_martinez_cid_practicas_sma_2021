@@ -1,7 +1,9 @@
 FROM python:3.9
 
-RUN pip install spade
-RUN pip install requests
-RUN pip install beautifulsoup4
+RUN pip install spade \
+	requests \
+	beautifulsoup4 \
+	sqlalchemy \
+	psycopg2-binary 
 
 WORKDIR /opt/app

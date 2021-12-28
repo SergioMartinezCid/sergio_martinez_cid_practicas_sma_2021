@@ -10,4 +10,5 @@ class FunctionalityRegex(Base):
     functionality = Column(Enum(Functionality), nullable=False)
 
     def __repr__(self) -> str:
-        return f'BaseUrl(id={self.id!r}, url={self.url!r})'
+        return f'FunctionalityRegex(id={self.id!r}, regex={self.url!r}), ' + \
+            'functionality={self.functionality!r}'

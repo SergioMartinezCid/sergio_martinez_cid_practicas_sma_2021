@@ -11,11 +11,10 @@ from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.expression import select
-from const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, ENVIRONMENT_FOLDER
+from sqlalchemy.sql.expression import select, func
+from const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, DEFAULT_GIF_COUNT, ENVIRONMENT_FOLDER
 from const import TIMEOUT_SECONDS
-from entities import BaseUrl, engine
-from entities.functionality_regex import FunctionalityRegex
+from entities import engine, BaseUrl, FunctionalityRegex, Joke
 from functionality import Functionality
 
 class ChatbotAgent(agent.Agent):
@@ -35,8 +34,6 @@ class ChatbotAgent(agent.Agent):
                 .where(BaseUrl.id == 'SEARCH_GIFS_URL')).first()[0]
             self.search_people_url = session.execute(select(BaseUrl.url)
                 .where(BaseUrl.id == 'SEARCH_PEOPLE_URL')).first()[0]
-            self.search_jokes_url = session.execute(select(BaseUrl.url)
-                .where(BaseUrl.id == 'SEARCH_JOKES_URL')).first()[0]
 
     async def setup(self):
         template = Template()
@@ -68,8 +65,8 @@ class HandleRequestsBehaviour(CyclicBehaviour):
         Functionality.SEARCH_PERSON_INFO: (lambda matches: SearchPersonInfoBehaviour(matches[0])),
         Functionality.MAKE_FILE: (lambda matches: MakeFileBehaviour(matches[0])),
         Functionality.DOWNLOAD_GIFS:
-            (lambda matches: DownloadGifsBehaviour(matches[0], matches[1])),
-        Functionality.TELL_JOKE_OF_THE_DAY: (lambda _: TellJokeOfTheDayBehaviour()),
+            (lambda matches: DownloadGifsBehaviour(matches[0])),
+        Functionality.TELL_JOKE: (lambda _: TellJokeBehaviour()),
         Functionality.SEND_EXIT: (lambda _: SendExitBehaviour()),
     }
 
@@ -108,7 +105,7 @@ class SendFunctionalityBehaviour(OneShotBehaviour):
     Look for information about someone: "Who is Barack Obama"
     Create an empty file: "Create file 'Very important file'"
     Download gifs: "Download 10 gifs of potatoes"
-    Tell the joke of the day: "Tell me a joke"
+    Tell a joke: "Tell me a joke"
     End the execution: "exit"''')
 
 class ShowTimeBehaviour(OneShotBehaviour):
@@ -185,18 +182,18 @@ class MakeFileBehaviour(OneShotBehaviour):
         await self.agent.send_response_message(self, message_body)
 
 class DownloadGifsBehaviour(OneShotBehaviour):
-    def __init__(self, gif_count, search_text):
+    def __init__(self, search_text):
         super().__init__()
-        self.gif_count = int(gif_count) if gif_count.isdigit() else 5
         self.search_text = search_text
 
     async def run(self):
-        if self.gif_count > 50:
+        gif_count = await self.ask_gif_count()
+        if gif_count > 50:
             await self.agent.send_response_message(self, 'Maximum number of gifs is 50')
             return
 
         response = requests.get(self.agent.search_gifs_url +
-                    f'?key={self.agent.gif_api_key}&q={self.search_text}&limit={self.gif_count}' +
+                    f'?key={self.agent.gif_api_key}&q={self.search_text}&limit={gif_count}' +
                     '&contentfilter=medium&media_filter=minimal') \
                 .json()
 
@@ -222,51 +219,32 @@ class DownloadGifsBehaviour(OneShotBehaviour):
         await self.agent.send_response_message(self,
             f'Successfully downloaded gifs about \'{self.search_text}\'')
 
-class TellJokeOfTheDayBehaviour(OneShotBehaviour):
-    headers = {'content-type': 'application/json'}
-
-    async def run(self):
-        response = requests.get(self.agent.search_jokes_url + '/categories', headers=self.headers) \
-                        .json()
-        if 'error' in response:
-            await self.agent.send_response_message(self,
-                'Too many joke requests within the last hour')
-            return
-
-        categories = response['contents']['categories']
-        selected_category = await self.ask_for_category(categories)
-
-        response = requests.get(self.agent.search_jokes_url + f'?category={selected_category}',
-                    headers=self.headers).json()
-
-        if 'error' in response:
-            await self.agent.send_response_message(self,
-                'Too many joke requests within the last hour')
-            return
-
-        jokes = response['contents']['jokes']
-
-        if len(jokes) <= 0:
-            await self.agent.send_response_message(self,
-                'There was an error retrieving the joke of the day')
-        else:
-            await self.agent.send_response_message(self,
-                jokes[0]['joke']['text'].strip())
-
-    async def ask_for_category(self, categories):
-        valid_categories = set(map(lambda x: x['name'], categories))
-        ask_message = 'Select a joke category:'
-        for category in categories:
-            ask_message += f"\n\t{category['name']}: {category['description']}"
-
-        selected_category = ''
-        while selected_category not in valid_categories:
+    async def ask_gif_count(self):
+        gif_count = None
+        ask_message = 'How many gifs?'
+        while gif_count is None or gif_count == 0 or gif_count > 50 :
             await self.agent.send_response_message(self, ask_message,
                 language='chatbot-intermediate-response')
             response = await self.receive(TIMEOUT_SECONDS)
             if response:
-                selected_category = response.body
-        return selected_category
+                if response.body.isdigit():
+                    gif_count = int(response.body)
+                    if gif_count == 0:
+                        ask_message = 'At least a gif must be downloaded\nAgain, how many gifs?'
+                    elif gif_count > 50:
+                        ask_message = 'No more than 50 gifs can be downloaded\n' + \
+                            'Again, how many gifs?'
+                elif response.body.lower().strip() == 'some':
+                    gif_count = DEFAULT_GIF_COUNT
+                else:
+                    ask_message = 'Select a number or \'some\'\nAgain, how many gifs?'
+        return gif_count
+
+class TellJokeBehaviour(OneShotBehaviour):
+    async def run(self):
+        with Session(engine) as session:
+            joke = session.execute(select(Joke.joke).order_by(func.random()).limit(1)).first()[0]
+        await self.agent.send_response_message(self, joke)
 
 class SendExitBehaviour(OneShotBehaviour):
     async def run(self):

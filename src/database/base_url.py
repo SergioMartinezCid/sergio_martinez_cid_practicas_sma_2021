@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String
-from .database import db
+from .base import Base
 
-class BaseUrl(db.base):
+class BaseUrl(Base):
     __tablename__ = "base_url"
 
     id  = Column(String, primary_key=True)

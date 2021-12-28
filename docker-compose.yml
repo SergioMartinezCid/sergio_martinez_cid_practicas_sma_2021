@@ -15,10 +15,7 @@ services:
       - chatbot-network
 
   database:
-    build:
-      context: ./database
-      dockerfile: Dockerfile
-    image: chatbot-database
+    image: postgres:14.1
     container_name: chatbot-database
     environment:
       POSTGRES_USER: postgres

@@ -1,11 +1,12 @@
 from sqlalchemy import Column, String, Enum
+from sqlalchemy.sql.sqltypes import Integer
 from functionality import Functionality
-from .database import db
+from .base import Base
 
-class FunctionalityRegex(db.base):
+class FunctionalityRegex(Base):
     __tablename__ = "functionality_regex"
 
-    id  = Column(String, primary_key=True)
+    id  = Column(Integer, primary_key=True, autoincrement=True)
     regex = Column(String, unique=True)
     functionality = Column(Enum(Functionality), nullable=False)
 

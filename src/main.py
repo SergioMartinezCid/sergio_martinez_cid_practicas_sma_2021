@@ -22,6 +22,7 @@ def main():
 
     # Load the database
     db.initialize_connection()
+    db.seed_data()
 
     # Load the json file with the crendentials
     with open(AGENT_CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:

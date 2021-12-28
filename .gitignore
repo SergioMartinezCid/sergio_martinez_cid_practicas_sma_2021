@@ -130,7 +130,6 @@ dmypy.json
 
 # Secrets
 agent_credentials.json
-db_credentials.json
 api_keys.json
 
 # Temporal files

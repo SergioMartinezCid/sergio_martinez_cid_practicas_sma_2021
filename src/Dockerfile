@@ -1,9 +1,6 @@
 FROM python:3.9
 
-RUN pip install spade \
-	requests \
-	beautifulsoup4 \
-	sqlalchemy \
-	psycopg2-binary 
+COPY requirements.txt .
+RUN python3 -m pip install -r requirements.txt
 
 WORKDIR /opt/app

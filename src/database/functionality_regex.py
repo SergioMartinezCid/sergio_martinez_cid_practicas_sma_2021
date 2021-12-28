@@ -1,8 +1,8 @@
 from sqlalchemy import Column, String, Enum
 from functionality import Functionality
-from .base import Base
+from .database import db
 
-class FunctionalityRegex(Base):
+class FunctionalityRegex(db.base):
     __tablename__ = "functionality_regex"
 
     id  = Column(String, primary_key=True)

@@ -10,11 +10,10 @@ from spade import agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
-from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import select, func
 from const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, DEFAULT_GIF_COUNT, ENVIRONMENT_FOLDER
 from const import TIMEOUT_SECONDS
-from entities import engine, BaseUrl, FunctionalityRegex, Joke
+from database import db, BaseUrl, FunctionalityRegex, Joke
 from functionality import Functionality
 
 class ChatbotAgent(agent.Agent):
@@ -29,7 +28,7 @@ class ChatbotAgent(agent.Agent):
             api_keys = json.load(api_keys_file)
         self.gif_api_key = api_keys['tenor.com']
 
-        with Session(engine) as session:
+        with db.get_new_session() as session:
             self.search_gifs_url = session.execute(select(BaseUrl.url)
                 .where(BaseUrl.id == 'SEARCH_GIFS_URL')).first()[0]
             self.search_people_url = session.execute(select(BaseUrl.url)
@@ -76,7 +75,7 @@ class HandleRequestsBehaviour(CyclicBehaviour):
         self.template_intermediate.set_metadata('performative', 'inform')
         self.template_intermediate.set_metadata('language', 'chatbot-intermediate-query')
 
-        with Session(engine) as session:
+        with db.get_new_session() as session:
             raw_functionality_regex = session.execute(
                 select(FunctionalityRegex.regex, FunctionalityRegex.functionality)).all()
             self.functionality_regex = dict(map(lambda x: (re.compile(x[0], re.I), x[1]),
@@ -104,7 +103,7 @@ class SendFunctionalityBehaviour(OneShotBehaviour):
     Show you the time: "Show me the time"
     Look for information about someone: "Who is Barack Obama"
     Create an empty file: "Create file 'Very important file'"
-    Download gifs: "Download 10 gifs of potatoes"
+    Download gifs: "Download gifs of potatoes"
     Tell a joke: "Tell me a joke"
     End the execution: "exit"''')
 
@@ -242,7 +241,7 @@ class DownloadGifsBehaviour(OneShotBehaviour):
 
 class TellJokeBehaviour(OneShotBehaviour):
     async def run(self):
-        with Session(engine) as session:
+        with db.get_new_session() as session:
             joke = session.execute(select(Joke.joke).order_by(func.random()).limit(1)).first()[0]
         await self.agent.send_response_message(self, joke)
 

@@ -10,7 +10,7 @@ from spade import agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
-from sqlalchemy.sql.expression import select, func
+from sqlalchemy.sql.expression import select, update, func
 from const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, DEFAULT_GIF_COUNT, ENVIRONMENT_FOLDER
 from const import TIMEOUT_SECONDS
 from database import db, BaseUrl, FunctionalityRegex, Joke
@@ -59,14 +59,20 @@ class SendGreetingBehaviour(OneShotBehaviour):
 
 class HandleRequestsBehaviour(CyclicBehaviour):
     functionality_to_behaviour = {
-        Functionality.SEND_FUNCTIONALITY: (lambda _: SendFunctionalityBehaviour()),
-        Functionality.SHOW_TIME: (lambda _: ShowTimeBehaviour()),
-        Functionality.SEARCH_PERSON_INFO: (lambda matches: SearchPersonInfoBehaviour(matches[0])),
-        Functionality.MAKE_FILE: (lambda matches: MakeFileBehaviour(matches[0])),
+        Functionality.SEND_FUNCTIONALITY:
+            (lambda _: SendFunctionalityBehaviour()),
+        Functionality.SHOW_TIME:
+            (lambda _: ShowTimeBehaviour()),
+        Functionality.SEARCH_PERSON_INFO:
+            (lambda matches: SearchPersonInfoBehaviour(matches[0])),
+        Functionality.MAKE_FILE:
+            (lambda matches: MakeFileBehaviour(matches[0])),
         Functionality.DOWNLOAD_GIFS:
             (lambda matches: DownloadGifsBehaviour(matches[0])),
-        Functionality.TELL_JOKE: (lambda _: TellJokeBehaviour()),
-        Functionality.SEND_EXIT: (lambda _: SendExitBehaviour()),
+        Functionality.TELL_JOKE:
+            (lambda matches: TellJokeBehaviour(matches[0])),
+        Functionality.SEND_EXIT:
+            (lambda _: SendExitBehaviour()),
     }
 
     def __init__(self):
@@ -240,10 +246,28 @@ class DownloadGifsBehaviour(OneShotBehaviour):
         return gif_count
 
 class TellJokeBehaviour(OneShotBehaviour):
+    def __init__(self, is_new):
+        super().__init__()
+        self.is_new = is_new.strip() != ''
+
     async def run(self):
+        stmt = select(Joke.joke).order_by(func.random()).limit(1)
+        if self.is_new:
+            stmt = stmt.where(Joke.is_new)
+
         with db.get_new_session() as session:
-            joke = session.execute(select(Joke.joke).order_by(func.random()).limit(1)).first()[0]
-        await self.agent.send_response_message(self, joke)
+            joke_row = session.execute(stmt).first()
+
+        if joke_row is None:
+            error_message = 'There are no new jokes in the database' if self.is_new else \
+                            'There are no jokes in the database'
+            await self.agent.send_response_message(self,error_message)
+        else:
+            joke = joke_row[0]
+            with db.get_new_session() as session:
+                session.execute(update(Joke).where(Joke.joke == joke).values(is_new=False))
+                session.commit()
+            await self.agent.send_response_message(self, joke)
 
 class SendExitBehaviour(OneShotBehaviour):
     async def run(self):

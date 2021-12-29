@@ -11,11 +11,11 @@ from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
 from sqlalchemy.sql.expression import select, update, func
-from loaded_answers import loaded_answers as la
-from const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, DEFAULT_GIF_COUNT, ENVIRONMENT_FOLDER, \
+from .loaded_answers import loaded_answers as la
+from .const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, DEFAULT_GIF_COUNT, ENVIRONMENT_FOLDER, \
     TIMEOUT_SECONDS
-from database import db, BaseUrl, FunctionalityRegex, Joke
-from functionality import Functionality
+from .database import db, BaseUrl, FunctionalityRegex, Joke
+from .functionality import Functionality
 
 class ChatbotAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):

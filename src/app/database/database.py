@@ -2,7 +2,7 @@ import json
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from const import DB_CREDENTIALS_FILE
+from app.const import DB_CREDENTIALS_FILE
 from .default_data import get_answers, get_default_base_urls, \
     get_default_functionality_regex, get_default_jokes
 from .base import Base

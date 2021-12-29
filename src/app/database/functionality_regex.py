@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Enum
-from functionality import Functionality
+from app.functionality import Functionality
 from .base import Base
 
 class FunctionalityRegex(Base):

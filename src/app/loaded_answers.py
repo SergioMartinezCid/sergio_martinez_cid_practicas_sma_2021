@@ -1,5 +1,5 @@
 from sqlalchemy.sql.expression import select
-from database import db, Answer
+from .database import db, Answer
 
 class LoadedAnswers:
     def __init__(self) -> None:

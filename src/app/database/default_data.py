@@ -1,5 +1,5 @@
-from const import DEFAULT_JOKES_FILE
-from functionality import Functionality
+from app.const import DEFAULT_JOKES_FILE
+from app.functionality import Functionality
 
 def get_default_base_urls():
     return [

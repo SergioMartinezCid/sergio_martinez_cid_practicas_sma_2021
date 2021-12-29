@@ -6,8 +6,8 @@ from spade import agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.template import ORTemplate, Template
-from loaded_answers import loaded_answers as la
-from const import AGENT_CREDENTIALS_FILE, TIMEOUT_SECONDS
+from .loaded_answers import loaded_answers as la
+from .const import AGENT_CREDENTIALS_FILE, TIMEOUT_SECONDS
 
 class UserAgent(agent.Agent):
     def __init__(self, jid, password, verify_security=False):

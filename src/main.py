@@ -4,11 +4,11 @@ import json
 import logging
 from time import sleep
 from spade import quit_spade
-from chatbot_agent import ChatbotAgent
-from const import AGENT_CREDENTIALS_FILE, LOG_FILE
-from database import db
-from loaded_answers import loaded_answers as la
-from user_agent import UserAgent
+from app.chatbot_agent import ChatbotAgent
+from app.const import AGENT_CREDENTIALS_FILE, LOG_FILE
+from app.database import db
+from app.loaded_answers import loaded_answers as la
+from app.user_agent import UserAgent
 
 
 def main():

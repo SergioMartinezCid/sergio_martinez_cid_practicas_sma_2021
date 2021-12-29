@@ -44,7 +44,7 @@ class Database:
                 session.commit()
             except IntegrityError:
                 session.rollback()
-            
+
             # Seed answers
             try:
                 session.bulk_insert_mappings(Answer, get_answers())

@@ -32,10 +32,11 @@ def get_answers():
         {'id': 'BOT_ANSWER_F', 'text': 'Bot says: {response}'},
         {'id': 'USER_QUERY', 'text': 'You say: '},
         {'id': 'BOT_GREETING', 'text': 'Hi Human! What do you want?'},
-        {'id': 'MESSAGE_NOT_UNDERSTOOD', 'text': 'Message not understood'},
+        {'id': 'MESSAGE_NOT_UNDERSTOOD', 'text':
+            'Message not understood. Try asking me \'What can you do?\''},
 
         # Available functionality
-        {'id': 'AVAILABLE_FUNCTIONALITY', 'text': '''I can do the following
+        {'id': 'AVAILABLE_FUNCTIONALITY', 'text': '''I can do the following things
     Show you this message: "What can you do?"
     Show you the time: "Show me the time"
     Look for information about someone: "Who is Barack Obama"

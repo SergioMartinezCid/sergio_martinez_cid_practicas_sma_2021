@@ -10,7 +10,7 @@ from spade import agent
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
-from sqlalchemy.sql.expression import select, update, func
+from sqlalchemy.sql.expression import select, func
 from .loaded_answers import loaded_answers as la
 from .const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, DEFAULT_GIF_COUNT, ENVIRONMENT_FOLDER, \
     TIMEOUT_SECONDS
@@ -244,23 +244,22 @@ class TellJokeBehaviour(OneShotBehaviour):
         self.is_new = is_new.strip() != ''
 
     async def run(self):
-        stmt = select(Joke.joke).order_by(func.random()).limit(1)
+        stmt = select(Joke).order_by(func.random()).limit(1)
         if self.is_new:
             stmt = stmt.where(Joke.is_new)
 
         with db.get_new_session() as session:
             joke_row = session.execute(stmt).first()
 
-        if joke_row is None:
-            error_message = la['ERROR_NO_NEW_JOKES'] if self.is_new else \
-                            la['ERROR_NO_JOKES']
-            await self.agent.send_response_message(self,error_message)
-        else:
-            joke = joke_row[0]
-            with db.get_new_session() as session:
-                session.execute(update(Joke).where(Joke.joke == joke).values(is_new=False))
+            if joke_row is None:
+                error_message = la['ERROR_NO_NEW_JOKES'] if self.is_new else \
+                                la['ERROR_NO_JOKES']
+                await self.agent.send_response_message(self,error_message)
+            else:
+                joke = joke_row[0]
+                joke.is_new = False
                 session.commit()
-            await self.agent.send_response_message(self, joke)
+                await self.agent.send_response_message(self, joke.joke)
 
 class SendExitBehaviour(OneShotBehaviour):
     async def run(self):

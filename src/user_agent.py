@@ -6,6 +6,7 @@ from spade import agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.template import ORTemplate, Template
+from loaded_answers import loaded_answers as la
 from const import AGENT_CREDENTIALS_FILE, TIMEOUT_SECONDS
 
 class UserAgent(agent.Agent):
@@ -27,7 +28,7 @@ class AwaitGreetingBehaviour(OneShotBehaviour):
         response = await self.receive(TIMEOUT_SECONDS)
         if response is None:
             return
-        print(f'Bot says: {response.body}')
+        print(la['BOT_ANSWER_F'].format(response=response.body))
 
         template_final = Template()
         template_final.set_metadata('performative', 'inform')
@@ -52,7 +53,7 @@ class AssistUserBehaviour(CyclicBehaviour):
 
     async def run(self):
         try:
-            message_content = input('You say: ')
+            message_content = input(la['USER_QUERY'])
         except EOFError:
             message_content = ''
         message = Message(to=self.agent.chatbot_address)
@@ -67,7 +68,7 @@ class AssistUserBehaviour(CyclicBehaviour):
             return
         self.is_intermediate_query = \
             response.get_metadata('language') == 'chatbot-intermediate-response'
-        print(f'Bot says: {response.body}')
+        print(la['BOT_ANSWER_F'].format(response=response.body))
 
 class ReceiveExitBehaviour(CyclicBehaviour):
     async def run(self):

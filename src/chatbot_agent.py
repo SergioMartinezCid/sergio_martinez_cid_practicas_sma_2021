@@ -11,8 +11,9 @@ from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.message import Message
 from spade.template import Template
 from sqlalchemy.sql.expression import select, update, func
-from const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, DEFAULT_GIF_COUNT, ENVIRONMENT_FOLDER
-from const import TIMEOUT_SECONDS
+from loaded_answers import loaded_answers as la
+from const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, DEFAULT_GIF_COUNT, ENVIRONMENT_FOLDER, \
+    TIMEOUT_SECONDS
 from database import db, BaseUrl, FunctionalityRegex, Joke
 from functionality import Functionality
 
@@ -54,7 +55,7 @@ class SendGreetingBehaviour(OneShotBehaviour):
         message = Message(to=self.agent.user_address)
         message.set_metadata('performative', 'inform')
         message.set_metadata('language', 'chatbot-greeting')
-        message.body = 'Hi Human! What do you want?'
+        message.body = la['BOT_GREETING']
         await self.send(message)
 
 class HandleRequestsBehaviour(CyclicBehaviour):
@@ -104,19 +105,12 @@ class HandleRequestsBehaviour(CyclicBehaviour):
 
 class SendFunctionalityBehaviour(OneShotBehaviour):
     async def run(self):
-        await self.agent.send_response_message(self, '''I can do the following
-    Show you this message: "What can you do?"
-    Show you the time: "Show me the time"
-    Look for information about someone: "Who is Barack Obama"
-    Create an empty file: "Create file 'Very important file'"
-    Download gifs: "Download gifs of potatoes"
-    Tell a joke: "Tell me a joke"
-    End the execution: "exit"''')
+        await self.agent.send_response_message(self, la['AVAILABLE_FUNCTIONALITY'])
 
 class ShowTimeBehaviour(OneShotBehaviour):
     async def run(self):
         await self.agent.send_response_message(self,
-            'The time is ' + strftime("%d-%m-%Y %H:%M:%S", gmtime()))
+            la['SHOW_TIME_F'].format(time=strftime("%d-%m-%Y %H:%M:%S", gmtime())))
 
 class SearchPersonInfoBehaviour(OneShotBehaviour):
     def __init__(self, name):
@@ -131,7 +125,7 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
         # Check whether the result is ambiguous
         if html.find('div', {'id': 'disambigbox'}) is not None:
             await self.agent.send_response_message(self,
-                f'The name "{self.name}" is too ambiguous')
+                la['AMBIGUOUS_PERSON_F'].format(name=self.name))
             return
 
         content_text = html.find('div', {'id': 'mw-content-text'})
@@ -151,7 +145,7 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
                     re.sub(r'\[[^\[]*\]', '', first_paragraph.text).strip())
                 return
         await self.agent.send_response_message(self,
-            f'No information was found about "{self.name}"')
+            la['NO_INFORMATION_PERSON_F'].format(name=self.name))
 
 class MakeFileBehaviour(OneShotBehaviour):
     def __init__(self, name):
@@ -164,14 +158,14 @@ class MakeFileBehaviour(OneShotBehaviour):
 
         try:
             if Path(self.name).is_absolute(): # Check if input was an absolute path
-                message_body = f'\'{self.name}\' is an absolute path, use a relative path instead'
+                message_body = la['ABSOLUTE_PATH_F'].format(name=self.name)
             elif file.exists():
                 if file.is_file():
-                    message_body = f'\'{self.name}\' already exists'
+                    message_body = la['FILE_EXISTS_F'].format(name=self.name)
                 elif file.exists() and file.is_dir():
-                    message_body = f'\'{self.name}\' is a folder'
+                    message_body = la['IS_FOLDER_F'].format(name=self.name)
             elif not file.resolve().is_relative_to(parent_folder):
-                message_body = f'\'{self.name}\' should not access the parent folder of environment'
+                message_body = la['ACCESS_PARENT_ENVIRONMENT_F'].format(name=self.name)
             else:
                 # Create empty file
                 file = file.resolve()
@@ -181,7 +175,7 @@ class MakeFileBehaviour(OneShotBehaviour):
 
                 with file.open('a', encoding='utf-8'):
                     pass
-                message_body = f'Successfully created \'{self.name}\''
+                message_body = la['CREATE_FILE_SUCCESS_F'].format(name=self.name)
         except OSError as error:
             message_body = error.strerror
         await self.agent.send_response_message(self, message_body)
@@ -194,7 +188,7 @@ class DownloadGifsBehaviour(OneShotBehaviour):
     async def run(self):
         gif_count = await self.ask_gif_count()
         if gif_count > 50:
-            await self.agent.send_response_message(self, 'Maximum number of gifs is 50')
+            await self.agent.send_response_message(self, la['MAX_GIF_COUNT'])
             return
 
         response = requests.get(self.agent.search_gifs_url +
@@ -206,7 +200,7 @@ class DownloadGifsBehaviour(OneShotBehaviour):
 
         if len(results) <= 0:
             await self.agent.send_response_message(self,
-                f'No results were found about {self.search_text}')
+                la['NO_RESULTS_F'].format(search_term=self.search_text))
             return
         result_urls = map(lambda result: result['media'][0]['gif']['url'], results)
         for index, result_url in enumerate(result_urls):
@@ -222,11 +216,11 @@ class DownloadGifsBehaviour(OneShotBehaviour):
                         gif_file.write(chunk)
 
         await self.agent.send_response_message(self,
-            f'Successfully downloaded gifs about \'{self.search_text}\'')
+            la['DOWNLOAD_GIFS_SUCCESS_F'].format(search_text=self.search_text))
 
     async def ask_gif_count(self):
         gif_count = None
-        ask_message = 'How many gifs?'
+        ask_message = la['ASK_GIF_COUNT']
         while gif_count is None or gif_count == 0 or gif_count > 50 :
             await self.agent.send_response_message(self, ask_message,
                 language='chatbot-intermediate-response')
@@ -235,14 +229,13 @@ class DownloadGifsBehaviour(OneShotBehaviour):
                 if response.body.isdigit():
                     gif_count = int(response.body)
                     if gif_count == 0:
-                        ask_message = 'At least a gif must be downloaded\nAgain, how many gifs?'
+                        ask_message = la['0_GIF_COUNT_ASK_AGAIN']
                     elif gif_count > 50:
-                        ask_message = 'No more than 50 gifs can be downloaded\n' + \
-                            'Again, how many gifs?'
+                        ask_message = la['LARGE_GIF_COUNT_ASK_AGAIN']
                 elif response.body.lower().strip() == 'some':
                     gif_count = DEFAULT_GIF_COUNT
                 else:
-                    ask_message = 'Select a number or \'some\'\nAgain, how many gifs?'
+                    ask_message = la['STRING_GIF_COUNT_ASK_AGAIN']
         return gif_count
 
 class TellJokeBehaviour(OneShotBehaviour):
@@ -259,8 +252,8 @@ class TellJokeBehaviour(OneShotBehaviour):
             joke_row = session.execute(stmt).first()
 
         if joke_row is None:
-            error_message = 'There are no new jokes in the database' if self.is_new else \
-                            'There are no jokes in the database'
+            error_message = la['ERROR_NO_NEW_JOKES'] if self.is_new else \
+                            la['ERROR_NO_JOKES']
             await self.agent.send_response_message(self,error_message)
         else:
             joke = joke_row[0]
@@ -277,4 +270,4 @@ class SendExitBehaviour(OneShotBehaviour):
 
 class NotUnderstoodBehaviour(OneShotBehaviour):
     async def run(self):
-        await self.agent.send_response_message(self, 'Message not understood')
+        await self.agent.send_response_message(self, la['MESSAGE_NOT_UNDERSTOOD'])

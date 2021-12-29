@@ -3,8 +3,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from const import DB_CREDENTIALS_FILE
-from .default_data import get_default_base_urls, get_default_functionality_regex, get_default_jokes
+from .default_data import get_answers, get_default_base_urls, \
+    get_default_functionality_regex, get_default_jokes
 from .base import Base
+from .answer import Answer
 from .functionality_regex import FunctionalityRegex
 from .base_url import BaseUrl
 from .joke import Joke
@@ -39,6 +41,13 @@ class Database:
             # Seed functionality to regex
             try:
                 session.bulk_insert_mappings(FunctionalityRegex, get_default_functionality_regex())
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+            
+            # Seed answers
+            try:
+                session.bulk_insert_mappings(Answer, get_answers())
                 session.commit()
             except IntegrityError:
                 session.rollback()

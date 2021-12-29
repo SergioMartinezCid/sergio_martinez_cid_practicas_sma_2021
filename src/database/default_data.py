@@ -22,7 +22,60 @@ def get_default_functionality_regex():
         {'regex': r'\s*tell\s+(?:me\s+)?a\s+(new\s+|)joke\s*$',
             'functionality': Functionality.TELL_JOKE},
         {'regex': r'\s*exit\s*$',
-            'functionality': Functionality.SEND_EXIT}
+            'functionality': Functionality.SEND_EXIT},
+    ]
+
+def get_answers():
+    return [
+        # General
+        {'id': 'AGENTS_FINISHED', 'text': 'All agents are finished'},
+        {'id': 'BOT_ANSWER_F', 'text': 'Bot says: {response}'},
+        {'id': 'USER_QUERY', 'text': 'You say: '},
+        {'id': 'BOT_GREETING', 'text': 'Hi Human! What do you want?'},
+        {'id': 'MESSAGE_NOT_UNDERSTOOD', 'text': 'Message not understood'},
+
+        # Available functionality
+        {'id': 'AVAILABLE_FUNCTIONALITY', 'text': '''I can do the following
+    Show you this message: "What can you do?"
+    Show you the time: "Show me the time"
+    Look for information about someone: "Who is Barack Obama"
+    Create an empty file: "Create file 'Very important file'"
+    Download gifs: "Download gifs of potatoes"
+    Tell a joke: "Tell me a joke"
+    End the execution: "exit"'''},
+
+        # Show time
+        {'id': 'SHOW_TIME_F', 'text': 'The time is {time}'},
+
+        # Search person
+        {'id': 'AMBIGUOUS_PERSON_F', 'text': 'The name "{name}" is too ambiguous'},
+        {'id': 'NO_INFORMATION_PERSON_F', 'text': 'No information was found about "{name}"'},
+
+        # Create file
+        {'id': 'ABSOLUTE_PATH_F',
+            'text': '\'{name}\' is an absolute path, use a relative path instead'},
+        {'id': 'FILE_EXISTS_F', 'text': '\'{name}\' already exists'},
+        {'id': 'IS_FOLDER_F', 'text': '\'{name}\' is a folder'},
+        {'id': 'ACCESS_PARENT_ENVIRONMENT_F',
+            'text': '\'{name}\' should not access the parent folder of environment'},
+        {'id': 'CREATE_FILE_SUCCESS_F', 'text': 'Successfully created \'{name}\''},
+
+        # Download gifs
+        {'id': 'MAX_GIF_COUNT', 'text': 'Maximum number of gifs is 50'},
+        {'id': 'NO_RESULTS_F', 'text': 'No results were found about {search_text}'},
+        {'id': 'DOWNLOAD_GIFS_SUCCESS_F', 'text':
+            'Successfully downloaded gifs about \'{search_text}\''},
+        {'id': 'ASK_GIF_COUNT', 'text': 'How many gifs?'},
+        {'id': '0_GIF_COUNT_ASK_AGAIN', 'text':
+            'At least a gif must be downloaded\nAgain, how many gifs?'},
+        {'id': 'LARGE_GIF_COUNT_ASK_AGAIN', 'text':
+            'No more than 50 gifs can be downloaded\nAgain, how many gifs?'},
+        {'id': 'STRING_GIF_COUNT_ASK_AGAIN', 'text':
+            'Select a number or \'some\'\nAgain, how many gifs?'},
+
+        # Tell jokes
+        {'id': 'ERROR_NO_JOKES', 'text': 'There are no jokes in the database'},
+        {'id': 'ERROR_NO_NEW_JOKES', 'text': 'There are no new jokes in the database'},
     ]
 
 def get_default_jokes():

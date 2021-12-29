@@ -7,6 +7,7 @@ from spade import quit_spade
 from chatbot_agent import ChatbotAgent
 from const import AGENT_CREDENTIALS_FILE, LOG_FILE
 from database import db
+from loaded_answers import loaded_answers as la
 from user_agent import UserAgent
 
 
@@ -23,6 +24,7 @@ def main():
     # Load the database
     db.initialize_connection()
     db.seed_data()
+    la.load_answers_from_database()
 
     # Load the json file with the crendentials
     with open(AGENT_CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:
@@ -43,18 +45,15 @@ def main():
         try:
             sleep(1)
         except KeyboardInterrupt:
-            chatbot.stop()
-            user.stop()
             print()
             break
 
-    # Stop the agents, just in case
+    # Quit SPADE, just in case, clean all the resources
     user.stop()
     chatbot.stop()
 
-    # Quit SPADE, just in case, clean all the resources
     quit_spade()
-    print('All agents are finished')
+    print(la['AGENTS_FINISHED'])
 
     # Disable logging before shutdown to avoid async logging
     # https://bugs.python.org/issue26789 (Upgrading to python 3.10

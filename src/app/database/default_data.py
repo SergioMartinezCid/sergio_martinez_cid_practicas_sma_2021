@@ -17,7 +17,7 @@ def get_default_functionality_regex():
             'functionality': Functionality.SEARCH_PERSON_INFO},
         {'regex': r'\s*(?:create|make)\s+file\s+\'(\S.*)\'\s*$',
             'functionality': Functionality.MAKE_FILE},
-        {'regex': r'\s*download\s+gifs\s+(?:about|of)\s+(\S.*)\s*$',
+        {'regex': r'\s*download\s+(\d+|some)\s+gifs\s+(?:about|of)\s+(\S.*)\s*$',
             'functionality': Functionality.DOWNLOAD_GIFS},
         {'regex': r'\s*tell\s+(?:me\s+)?a\s+(new\s+|)joke\s*$',
             'functionality': Functionality.TELL_JOKE},
@@ -41,7 +41,7 @@ def get_answers():
     Show you the time: "Show me the time"
     Look for information about someone: "Who is Barack Obama"
     Create an empty file: "Create file 'Very important file'"
-    Download gifs: "Download gifs of potatoes"
+    Download gifs: "Download 10 gifs of potatoes"
     Tell a joke: "Tell me a joke"
     End the execution: "exit"'''},
 
@@ -66,13 +66,6 @@ def get_answers():
         {'id': 'NO_RESULTS_F', 'text': 'No results were found about {search_text}'},
         {'id': 'DOWNLOAD_GIFS_SUCCESS_F', 'text':
             'Successfully downloaded gifs about \'{search_text}\''},
-        {'id': 'ASK_GIF_COUNT', 'text': 'How many gifs?'},
-        {'id': '0_GIF_COUNT_ASK_AGAIN', 'text':
-            'At least a gif must be downloaded\nAgain, how many gifs?'},
-        {'id': 'LARGE_GIF_COUNT_ASK_AGAIN', 'text':
-            'No more than 50 gifs can be downloaded\nAgain, how many gifs?'},
-        {'id': 'STRING_GIF_COUNT_ASK_AGAIN', 'text':
-            'Select a number or \'some\'\nAgain, how many gifs?'},
 
         # Tell jokes
         {'id': 'ERROR_NO_JOKES', 'text': 'There are no jokes in the database'},

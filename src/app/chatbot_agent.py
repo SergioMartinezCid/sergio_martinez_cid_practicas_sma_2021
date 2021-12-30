@@ -12,7 +12,7 @@ from spade.message import Message
 from spade.template import Template
 from sqlalchemy.sql.expression import select, func
 from .loaded_answers import loaded_answers as la
-from .const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, DEFAULT_GIF_COUNT, ENVIRONMENT_FOLDER, \
+from .const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, DEFAULT_GIF_COUNT, ENVIRONMENT_FOLDER, MAX_GIF_COUNT, \
     TIMEOUT_SECONDS
 from .database import db, BaseUrl, FunctionalityRegex, Joke
 from .functionality import Functionality
@@ -65,13 +65,13 @@ class HandleRequestsBehaviour(CyclicBehaviour):
         Functionality.SHOW_TIME:
             (lambda _: ShowTimeBehaviour()),
         Functionality.SEARCH_PERSON_INFO:
-            (lambda matches: SearchPersonInfoBehaviour(matches[0])),
+            (lambda groups: SearchPersonInfoBehaviour(groups[0])),
         Functionality.MAKE_FILE:
-            (lambda matches: MakeFileBehaviour(matches[0])),
+            (lambda groups: MakeFileBehaviour(groups[0])),
         Functionality.DOWNLOAD_GIFS:
-            (lambda matches: DownloadGifsBehaviour(matches[0])),
+            (lambda groups: DownloadGifsBehaviour(groups[0], groups[1])),
         Functionality.TELL_JOKE:
-            (lambda matches: TellJokeBehaviour(matches[0])),
+            (lambda groups: TellJokeBehaviour(groups[0])),
         Functionality.SEND_EXIT:
             (lambda _: SendExitBehaviour()),
     }
@@ -181,18 +181,18 @@ class MakeFileBehaviour(OneShotBehaviour):
         await self.agent.send_response_message(self, message_body)
 
 class DownloadGifsBehaviour(OneShotBehaviour):
-    def __init__(self, search_text):
+    def __init__(self, gif_count, search_text):
         super().__init__()
+        self.gif_count = int(gif_count) if gif_count.isdecimal() else DEFAULT_GIF_COUNT
         self.search_text = search_text
 
     async def run(self):
-        gif_count = await self.ask_gif_count()
-        if gif_count > 50:
+        if self.gif_count > MAX_GIF_COUNT:
             await self.agent.send_response_message(self, la['MAX_GIF_COUNT'])
             return
 
         response = requests.get(self.agent.search_gifs_url +
-                    f'?key={self.agent.gif_api_key}&q={self.search_text}&limit={gif_count}' +
+                    f'?key={self.agent.gif_api_key}&q={self.search_text}&limit={self.gif_count}' +
                     '&contentfilter=medium&media_filter=minimal') \
                 .json()
 
@@ -217,26 +217,6 @@ class DownloadGifsBehaviour(OneShotBehaviour):
 
         await self.agent.send_response_message(self,
             la['DOWNLOAD_GIFS_SUCCESS_F'].format(search_text=self.search_text))
-
-    async def ask_gif_count(self):
-        gif_count = None
-        ask_message = la['ASK_GIF_COUNT']
-        while gif_count is None or gif_count == 0 or gif_count > 50 :
-            await self.agent.send_response_message(self, ask_message,
-                language='chatbot-intermediate-response')
-            response = await self.receive(TIMEOUT_SECONDS)
-            if response:
-                if response.body.isdigit():
-                    gif_count = int(response.body)
-                    if gif_count == 0:
-                        ask_message = la['0_GIF_COUNT_ASK_AGAIN']
-                    elif gif_count > 50:
-                        ask_message = la['LARGE_GIF_COUNT_ASK_AGAIN']
-                elif response.body.lower().strip() == 'some':
-                    gif_count = DEFAULT_GIF_COUNT
-                else:
-                    ask_message = la['STRING_GIF_COUNT_ASK_AGAIN']
-        return gif_count
 
 class TellJokeBehaviour(OneShotBehaviour):
     def __init__(self, is_new):

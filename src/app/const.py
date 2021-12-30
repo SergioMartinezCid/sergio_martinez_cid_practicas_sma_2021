@@ -6,3 +6,4 @@ DEFAULT_JOKES_FILE = 'app/database/default_jokes.txt'
 ENVIRONMENT_FOLDER = '/opt/environment'
 TIMEOUT_SECONDS = 120
 DEFAULT_GIF_COUNT = 5
+MAX_GIF_COUNT = 50

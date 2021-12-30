@@ -12,8 +12,8 @@ from spade.message import Message
 from spade.template import Template
 from sqlalchemy.sql.expression import select, func
 from .loaded_answers import loaded_answers as la
-from .const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, DEFAULT_GIF_COUNT, ENVIRONMENT_FOLDER, MAX_GIF_COUNT, \
-    TIMEOUT_SECONDS
+from .const import API_KEYS_FILE, AGENT_CREDENTIALS_FILE, ENVIRONMENT_FOLDER, \
+    DEFAULT_GIF_COUNT, MAX_GIF_COUNT, TIMEOUT_SECONDS
 from .database import db, BaseUrl, FunctionalityRegex, Joke
 from .functionality import Functionality
 
@@ -37,7 +37,7 @@ class ChatbotAgent(agent.Agent):
 
     async def setup(self):
         template = Template()
-        template.set_metadata('performative', 'inform')
+        template.set_metadata('performative', 'request')
         template.set_metadata('language', 'chatbot-query')
         self.add_behaviour(HandleRequestsBehaviour(), template)
         self.add_behaviour(SendGreetingBehaviour())
@@ -78,10 +78,6 @@ class HandleRequestsBehaviour(CyclicBehaviour):
 
     def __init__(self):
         super().__init__()
-        self.template_intermediate = Template()
-        self.template_intermediate.set_metadata('performative', 'inform')
-        self.template_intermediate.set_metadata('language', 'chatbot-intermediate-query')
-
         with db.get_new_session() as session:
             raw_functionality_regex = session.execute(
                 select(FunctionalityRegex.regex, FunctionalityRegex.functionality)).all()
@@ -92,11 +88,11 @@ class HandleRequestsBehaviour(CyclicBehaviour):
         message = await self.receive(TIMEOUT_SECONDS)
         if message is None:
             return
-        action = self.get_response_from_message(message.body)
-        self.agent.add_behaviour(action, self.template_intermediate)
+        action = self.get_functionality_from_message(message.body)
+        self.agent.add_behaviour(action)
         await action.join()
 
-    def get_response_from_message(self, message) -> OneShotBehaviour:
+    def get_functionality_from_message(self, message) -> OneShotBehaviour:
         for regex, functionality in self.functionality_regex.items():
             match = regex.match(message)
             if match is not None:

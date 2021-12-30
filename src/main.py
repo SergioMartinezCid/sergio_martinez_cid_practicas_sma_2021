@@ -2,7 +2,6 @@
 
 import json
 import logging
-from time import sleep
 from spade import quit_spade
 from app.chatbot_agent import ChatbotAgent
 from app.const import AGENT_CREDENTIALS_FILE, LOG_FILE
@@ -41,12 +40,10 @@ def main():
     chatbot.start().result()
 
     # Wait until the execution is finished
-    while chatbot.is_alive() or user.is_alive():
-        try:
-            sleep(1)
-        except KeyboardInterrupt:
-            print()
-            break
+    try:
+        user.exit_behaviour.join()
+    except KeyboardInterrupt:
+        print()
 
     # Quit SPADE, just in case, clean all the resources
     user.stop()

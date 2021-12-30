@@ -16,12 +16,19 @@ class UserAgent(agent.Agent):
         with open(AGENT_CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:
             creedentials = json.load(creedentials_file)
         self.chatbot_address = creedentials['chatbot']['username']
+        self.exit_behaviour = None
 
     async def setup(self):
         template = Template()
         template.set_metadata('performative', 'inform')
         template.set_metadata('language', 'chatbot-greeting')
         self.add_behaviour(AwaitGreetingBehaviour(), template)
+
+        template = Template()
+        template.set_metadata('performative', 'request')
+        template.set_metadata('language', 'chatbot-exit')
+        self.exit_behaviour = ReceiveExitBehaviour()
+        self.add_behaviour(self.exit_behaviour, template)
 
 class AwaitGreetingBehaviour(OneShotBehaviour):
     async def run(self):
@@ -40,11 +47,6 @@ class AwaitGreetingBehaviour(OneShotBehaviour):
 
         template = ORTemplate(template_final, template_intermediate)
         self.agent.add_behaviour(AssistUserBehaviour(), template)
-
-        template = Template()
-        template.set_metadata('performative', 'request')
-        template.set_metadata('language', 'chatbot-exit')
-        self.agent.add_behaviour(ReceiveExitBehaviour(), template)
 
 class AssistUserBehaviour(CyclicBehaviour):
     def __init__(self):

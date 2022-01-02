@@ -53,6 +53,7 @@ class AssistUserBehaviour(CyclicBehaviour):
         except EOFError:
             print()
             message_content = ''
+
         logger.debug('Sending request: %s', message_content)
         message = Message(to=self.agent.chatbot_address)
         message.set_metadata('performative', 'request')

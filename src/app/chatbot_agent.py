@@ -154,8 +154,8 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
             content = html.find('div', {'id': 'bodyContent'})
             content_text = reduce(lambda x, y: x if len(x.text) > len(y.text) else y,
                                     content.children)
-        first_paragraph = next(filter(lambda x: len(x.text) > 5, content_text.find_all('p')))
 
+        first_paragraph = next(filter(lambda x: len(x.text) > 5, content_text.find_all('p')))
         if first_paragraph is not None:
             logger.debug('There is a first paragraph in the page')
             match = re.match(r'The page \".*\" does not exist\. You can ask for it to be created',
@@ -222,19 +222,19 @@ class DownloadGifsBehaviour(OneShotBehaviour):
         res = requests.get(self.agent.search_gifs_url +
                     f'?key={self.agent.gif_api_key}&q={self.search_text}&limit={self.gif_count}' +
                     '&contentfilter=medium&media_filter=minimal')
-
         if res.status_code != 200:
             logger.debug('Failed to reach server, code %s', res.status_code)
             await self.agent.send_response_message(self, la['NETWORK_ERROR'])
             return
-        response = res.json()
-        results = response['results']
+
+        results = res.json()['results']
 
         if len(results) <= 0:
             await self.agent.send_response_message(self,
                 la['NO_RESULTS_F'].format(search_term=self.search_text))
             return
 
+        folder_name = ''.join(x if x.isalnum() or x in '-_.() ' else '_' for x in self.search_text)
         result_urls = map(lambda result: result['media'][0]['gif']['url'], results)
         for index, result_url in enumerate(result_urls):
             res = requests.get(result_url, stream=True)
@@ -243,8 +243,6 @@ class DownloadGifsBehaviour(OneShotBehaviour):
                 await self.agent.send_response_message(self, la['NETWORK_ERROR'])
                 return
 
-            folder_name = ''.join(x if x.isalnum() or x in '-_.() ' else '_'
-                for x in self.search_text)
             gif_path = Path(f'{ENVIRONMENT_FOLDER}/{folder_name}/{index+1}.gif').resolve()
             if not gif_path.parent.exists():
                 logger.debug('Creating parent folder containing the file')

@@ -73,11 +73,11 @@ def main():
         # Create the agents
         logger.debug('Creating agents')
         user = UserAgent(creedentials['user']['username'],
-                                creedentials['user']['password'],
-                                creedentials['chatbot']['username'])
+                            creedentials['user']['password'],
+                            creedentials['chatbot']['username'])
         chatbot = ChatbotAgent(creedentials['chatbot']['username'],
-                                creedentials['chatbot']['password'],
-                                creedentials['user']['username'])
+                            creedentials['chatbot']['password'],
+                            creedentials['user']['username'])
     except FileNotFoundError:
         logger.error('File with the API keys (%s) was not found', AGENT_CREDENTIALS_FILE)
         traceback_logger.error('', exc_info=True)

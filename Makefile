@@ -1,11 +1,11 @@
 full: clean build-start
 
 start: volume_folders
-	@docker-compose run --rm -u $$(id -u):$$(id -g) --name chatbot-app app
+	@docker-compose run --rm -u 1000:1000 --name chatbot-app app
 
 build-start: volume_folders
 	@docker-compose build
-	@docker-compose run --rm -u $$(id -u):$$(id -g) --name chatbot-app app
+	@docker-compose run --rm -u 1000:1000 --name chatbot-app app
 
 clean:
 	@docker-compose down

@@ -40,9 +40,9 @@ def get_answers():
     Show you this message: "What can you do?"
     Show you the time: "Show me the time"
     Look for information about someone: "Who is Barack Obama"
-    Create an empty file: "Create file 'Very important file'"
-    Download gifs: "Download 10 gifs of potatoes"
-    Tell a joke: "Tell me a joke"
+    Create an empty file: "Create file 'Very important file'" /  "Make file 'Very important file'"
+    Download gifs: "Download 10 gifs of potatoes" /  "Download some gifs of potatoes"
+    Tell a joke: "Tell me a joke" / "Tell me a new joke" 
     End the execution: "exit"'''},
 
         # Show time

@@ -31,8 +31,11 @@ def main():
 
     # Load the database
     try:
+        logger.debug('Connecting to the database')
         db.initialize_connection()
+        logger.debug('Seeding default data')
         db.seed_data()
+        logger.debug('Loading Answers from the database')
         la.load_answers_from_database()
     except DatabaseError:
         logger.error('There was an error while connecting to the database')
@@ -44,6 +47,7 @@ def main():
         return
 
     try:
+        logger.debug('Loading agent credentials')
         # Load the json file with the crendentials
         with open(AGENT_CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:
             creedentials = json.load(creedentials_file)
@@ -66,6 +70,7 @@ def main():
 
     try:
         # Create the agents
+        logger.debug('Creating agents')
         user = UserAgent(creedentials['user']['username'],
                                 creedentials['user']['password'],
                                 creedentials['chatbot']['username'])
@@ -92,6 +97,7 @@ def main():
 
     try:
         # Start the agents
+        logger.debug('Starting agents agents')
         user.start().result()
         chatbot.start().result()
 
@@ -109,6 +115,7 @@ def main():
         return
 
     # Quit SPADE, just in case, clean all the resources
+    logger.debug('Stopping execution')
     user.stop()
     chatbot.stop()
 

@@ -27,10 +27,12 @@ class ChatbotAgent(agent.Agent):
         super().__init__(jid, password, verify_security=verify_security)
         self.user_address = user_address
 
+        logger.debug('Loading API keys')
         with open(API_KEYS_FILE, 'r', encoding='utf-8') as api_keys_file:
             api_keys = json.load(api_keys_file)
         self.gif_api_key = api_keys['tenor.com']
 
+        logger.debug('Loading base URLs')
         with db.get_new_session() as session:
             search_gifs_url_result = session.execute(select(BaseUrl.url)
                 .where(BaseUrl.id == 'SEARCH_GIFS_URL')).first()
@@ -54,6 +56,7 @@ class ChatbotAgent(agent.Agent):
         message.set_metadata('performative',performative)
         message.set_metadata('language',language)
         message.body = body
+        logger.debug('Sending message to user agent: %s', str(message))
         await behaviour.send(message)
 
 class SendGreetingBehaviour(OneShotBehaviour):
@@ -82,6 +85,7 @@ class HandleRequestsBehaviour(CyclicBehaviour):
 
     def __init__(self):
         super().__init__()
+        logger.debug('Loading functionality regex from database')
         with db.get_new_session() as session:
             raw_functionality_regex = session.execute(
                 select(FunctionalityRegex.regex, FunctionalityRegex.functionality)).all()
@@ -89,10 +93,12 @@ class HandleRequestsBehaviour(CyclicBehaviour):
                                                 raw_functionality_regex))
 
     async def run(self):
+        logger.debug('Waiting for user request')
         message = await self.receive(TIMEOUT_SECONDS)
         if message is None:
-            logger.info('Timeout exceeded while waiting for user request')
+            logger.debug('Timeout exceeded while waiting for user request')
             return
+        logger.debug('Received user request: %s', str(message))
         action = self.get_functionality_from_message(message.body)
         self.agent.add_behaviour(action)
         await action.join()
@@ -101,15 +107,19 @@ class HandleRequestsBehaviour(CyclicBehaviour):
         for regex, functionality in self.functionality_regex.items():
             match = regex.match(message)
             if match is not None:
+                logger.debug('Selected functionality %s',
+                    str(self.functionality_to_behaviour[functionality]))
                 return self.functionality_to_behaviour[functionality](match.groups())
         return NotUnderstoodBehaviour()
 
 class SendFunctionalityBehaviour(OneShotBehaviour):
     async def run(self):
+        logger.debug('Sending functionality list')
         await self.agent.send_response_message(self, la['AVAILABLE_FUNCTIONALITY'])
 
 class ShowTimeBehaviour(OneShotBehaviour):
     async def run(self):
+        logger.debug('Sending current time')
         await self.agent.send_response_message(self,
             la['SHOW_TIME_F'].format(time=strftime("%d-%m-%Y %H:%M:%S", gmtime())))
 
@@ -119,15 +129,18 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
         self.name = name
 
     async def run(self):
+        logger.debug('Scrapping for information about %s', self.name)
         res = requests.get(self.agent.search_people_url +
             f'?search={urllib.parse.quote(self.name)}')
         if res.status_code != 200:
+            logger.debug('Failed to reach server, code %s', res.status_code)
             await self.agent.send_response_message(self, la['NETWORK_ERROR'])
             return
         html = BeautifulSoup(res.content, 'html.parser')
 
         # Check whether the result is ambiguous
         if html.find('div', {'id': 'disambigbox'}) is not None:
+            logger.debug('An ambiguous result was found')
             await self.agent.send_response_message(self,
                 la['AMBIGUOUS_PERSON_F'].format(name=self.name))
             return
@@ -136,16 +149,18 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
 
         # Use a more general id if the previous one stops working
         if content_text is None:
-            logger.info('Initial web scrapping strategy failed. Trying alternative...')
+            logger.debug('Initial web scrapping strategy failed. Trying alternative strategy...')
             content = html.find('div', {'id': 'bodyContent'})
             content_text = reduce(lambda x, y: x if len(x.text) > len(y.text) else y,
                                     content.children)
         first_paragraph = next(filter(lambda x: len(x.text) > 5, content_text.find_all('p')))
 
         if first_paragraph is not None:
+            logger.debug('There is a first paragraph in the page')
             match = re.match(r'The page \".*\" does not exist\. You can ask for it to be created',
                                 first_paragraph.text.strip())
             if match is None:
+                logger.debug('Cleaning text in the first paragraph')
                 await self.agent.send_response_message(self,
                     re.sub(r'\[[^\[]*\]', '', first_paragraph.text).strip())
                 return
@@ -173,15 +188,19 @@ class MakeFileBehaviour(OneShotBehaviour):
                 message_body = la['ACCESS_PARENT_ENVIRONMENT_F'].format(name=self.name)
             else:
                 # Create empty file
+                logger.debug('No error found in the request')
                 file = file.resolve()
 
                 if not file.parent.exists():
+                    logger.debug('Creating parent folder containing the file')
                     file.parent.mkdir(parents=True, exist_ok=True)
 
                 with file.open('a', encoding='utf-8'):
                     pass
                 message_body = la['CREATE_FILE_SUCCESS_F'].format(name=self.name)
         except OSError as error:
+            logger.info('Unexpected error: %s', str(error))
+            traceback_logger.info('', stack_info=True)
             message_body = error.strerror
         await self.agent.send_response_message(self, message_body)
 
@@ -202,6 +221,7 @@ class DownloadGifsBehaviour(OneShotBehaviour):
                     '&contentfilter=medium&media_filter=minimal')
 
         if res.status_code != 200:
+            logger.debug('Failed to reach server, code %s', res.status_code)
             await self.agent.send_response_message(self, la['NETWORK_ERROR'])
             return
         response = res.json()
@@ -224,8 +244,10 @@ class DownloadGifsBehaviour(OneShotBehaviour):
                 for x in self.search_text)
             gif_path = Path(f'{ENVIRONMENT_FOLDER}/{folder_name}/{index+1}.gif').resolve()
             if not gif_path.parent.exists():
+                logger.debug('Creating parent folder containing the file')
                 gif_path.parent.mkdir(parents=True, exist_ok=True)
             with gif_path.open('wb') as gif_file:
+                logger.debug('Writing file in chunks')
                 for chunk in res.iter_content(chunk_size=1024):
                     if chunk:
                         gif_file.write(chunk)
@@ -241,6 +263,7 @@ class TellJokeBehaviour(OneShotBehaviour):
     async def run(self):
         stmt = select(Joke).order_by(func.random()).limit(1)
         if self.is_new:
+            logger.debug('Filtering only new jokes')
             stmt = stmt.where(Joke.is_new)
 
         with db.get_new_session() as session:
@@ -252,6 +275,7 @@ class TellJokeBehaviour(OneShotBehaviour):
                 await self.agent.send_response_message(self,error_message)
             else:
                 joke = joke_row[0]
+                logger.debug('Marking joke as old in the database')
                 joke.is_new = False
                 session.commit()
                 await self.agent.send_response_message(self, joke.joke)

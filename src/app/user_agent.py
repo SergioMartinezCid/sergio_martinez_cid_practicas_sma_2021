@@ -1,4 +1,4 @@
-import json
+import logging
 # The following import makes arrows work properly
 # when writing an input
 import readline #  pylint: disable=unused-import
@@ -7,15 +7,15 @@ from spade.message import Message
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.template import Template
 from .loaded_answers import loaded_answers as la
-from .const import AGENT_CREDENTIALS_FILE, TIMEOUT_SECONDS
+from .const import LOGGER_NAME, TIMEOUT_SECONDS, TRACEBACK_LOGGER_NAME
+
+logger = logging.getLogger(LOGGER_NAME)
+traceback_logger = logging.getLogger(TRACEBACK_LOGGER_NAME)
 
 class UserAgent(agent.Agent):
-    def __init__(self, jid, password, verify_security=False):
+    def __init__(self, jid, password, chatbot_address, verify_security=False):
         super().__init__(jid, password, verify_security=verify_security)
-
-        with open(AGENT_CREDENTIALS_FILE, 'r', encoding='utf8') as creedentials_file:
-            creedentials = json.load(creedentials_file)
-        self.chatbot_address = creedentials['chatbot']['username']
+        self.chatbot_address = chatbot_address
         self.exit_behaviour = None
 
     async def setup(self):
@@ -34,6 +34,7 @@ class AwaitGreetingBehaviour(OneShotBehaviour):
     async def run(self):
         response = await self.receive(TIMEOUT_SECONDS)
         if response is None:
+            logger.warning('Timeout exceeded while waiting for greeting')
             return
         print(la['BOT_ANSWER_F'].format(response=response.body))
 
@@ -57,6 +58,7 @@ class AssistUserBehaviour(CyclicBehaviour):
 
         response = await self.receive(TIMEOUT_SECONDS)
         if response is None:
+            logger.warning('Timeout exceeded while waiting for chatbot response')
             return
         print(la['BOT_ANSWER_F'].format(response=response.body))
 

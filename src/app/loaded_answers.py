@@ -1,3 +1,4 @@
+import logging
 from sqlalchemy.sql.expression import select
 from .database import db, Answer
 
@@ -12,6 +13,9 @@ class LoadedAnswers:
                 self._answers[answer[0].id] = answer[0].text
 
     def __getitem__(self, key):
-        return self._answers[key]
+        if key in self._answers:
+            return self._answers[key]
+        logging.error('Key of answer not found')
+        return 'SAMPLE TEXT'
 
 loaded_answers = LoadedAnswers()

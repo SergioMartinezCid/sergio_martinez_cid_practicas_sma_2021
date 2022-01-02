@@ -34,6 +34,7 @@ def get_answers():
         {'id': 'BOT_GREETING', 'text': 'Hi Human! What do you want?'},
         {'id': 'MESSAGE_NOT_UNDERSTOOD', 'text':
             'Message not understood. Try asking me \'What can you do?\''},
+        {'id': 'NETWORK_ERROR', 'text': 'An error ocurred while accesing the internet. Try later'},
 
         # Available functionality
         {'id': 'AVAILABLE_FUNCTIONALITY', 'text': '''I can do the following things

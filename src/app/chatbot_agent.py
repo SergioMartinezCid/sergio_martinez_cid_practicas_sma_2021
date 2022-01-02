@@ -66,22 +66,24 @@ class SendGreetingBehaviour(OneShotBehaviour):
             performative='inform', language='chatbot-greeting')
 
 class HandleRequestsBehaviour(CyclicBehaviour):
+    #  pylint: disable=unnecessary-lambda
     functionality_to_behaviour = {
         Functionality.SEND_FUNCTIONALITY:
             (lambda _: SendFunctionalityBehaviour()),
         Functionality.SHOW_TIME:
             (lambda _: ShowTimeBehaviour()),
         Functionality.SEARCH_PERSON_INFO:
-            (lambda groups: SearchPersonInfoBehaviour(groups[0])),
+            (lambda groups: SearchPersonInfoBehaviour(groups)),
         Functionality.MAKE_FILE:
-            (lambda groups: MakeFileBehaviour(groups[0])),
+            (lambda groups: MakeFileBehaviour(groups)),
         Functionality.DOWNLOAD_GIFS:
-            (lambda groups: DownloadGifsBehaviour(groups[0], groups[1])),
+            (lambda groups: DownloadGifsBehaviour(groups)),
         Functionality.TELL_JOKE:
-            (lambda groups: TellJokeBehaviour(groups[0])),
+            (lambda groups: TellJokeBehaviour(groups)),
         Functionality.SEND_EXIT:
             (lambda _: SendExitBehaviour()),
     }
+    #  pylint: enable=unnecessary-lambda
 
     def __init__(self):
         super().__init__()
@@ -107,8 +109,7 @@ class HandleRequestsBehaviour(CyclicBehaviour):
         for regex, functionality in self.functionality_regex.items():
             match = regex.match(message)
             if match is not None:
-                logger.debug('Selected functionality %s',
-                    str(self.functionality_to_behaviour[functionality]))
+                logger.debug('Selected functionality %s', str(functionality))
                 return self.functionality_to_behaviour[functionality](match.groups())
         return NotUnderstoodBehaviour()
 
@@ -124,9 +125,9 @@ class ShowTimeBehaviour(OneShotBehaviour):
             la['SHOW_TIME_F'].format(time=strftime("%d-%m-%Y %H:%M:%S", gmtime())))
 
 class SearchPersonInfoBehaviour(OneShotBehaviour):
-    def __init__(self, name):
+    def __init__(self, groups):
         super().__init__()
-        self.name = name
+        self.name = groups[0]
 
     async def run(self):
         logger.debug('Scrapping for information about %s', self.name)
@@ -168,9 +169,10 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
             la['NO_INFORMATION_PERSON_F'].format(name=self.name))
 
 class MakeFileBehaviour(OneShotBehaviour):
-    def __init__(self, name):
+    def __init__(self, groups):
         super().__init__()
-        self.name = name
+        self.name = groups[0]
+        self.file_contents = groups[1] if len(groups) > 1 else None
 
     async def run(self):
         file = Path(f'{ENVIRONMENT_FOLDER}/{self.name}')
@@ -195,8 +197,9 @@ class MakeFileBehaviour(OneShotBehaviour):
                     logger.debug('Creating parent folder containing the file')
                     file.parent.mkdir(parents=True, exist_ok=True)
 
-                with file.open('a', encoding='utf-8'):
-                    pass
+                with file.open('w', encoding='utf-8') as file:
+                    if self.file_contents is not None:
+                        file.write(self.file_contents)
                 message_body = la['CREATE_FILE_SUCCESS_F'].format(name=self.name)
         except OSError as error:
             logger.info('Unexpected error: %s', str(error))
@@ -205,11 +208,11 @@ class MakeFileBehaviour(OneShotBehaviour):
         await self.agent.send_response_message(self, message_body)
 
 class DownloadGifsBehaviour(OneShotBehaviour):
-    def __init__(self, gif_count_string, search_text):
+    def __init__(self, groups):
         super().__init__()
-        self.gif_count = int(gif_count_string) if gif_count_string.isdecimal() \
+        self.gif_count = int(groups[0]) if groups[0].isdecimal() \
                          else DEFAULT_GIF_COUNT
-        self.search_text = search_text
+        self.search_text = groups[1]
 
     async def run(self):
         if self.gif_count > MAX_GIF_COUNT:
@@ -256,9 +259,9 @@ class DownloadGifsBehaviour(OneShotBehaviour):
             la['DOWNLOAD_GIFS_SUCCESS_F'].format(search_text=self.search_text))
 
 class TellJokeBehaviour(OneShotBehaviour):
-    def __init__(self, is_new_string):
+    def __init__(self, groups):
         super().__init__()
-        self.is_new = is_new_string.strip() != ''
+        self.is_new = len(groups) > 0
 
     async def run(self):
         stmt = select(Joke).order_by(func.random()).limit(1)

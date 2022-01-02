@@ -17,7 +17,7 @@ traceback_logger = logging.getLogger(TRACEBACK_LOGGER_NAME)
 
 def main():
     # Configure logging
-    file_log_level = logging.INFO
+    file_log_level = logging.DEBUG
     logging.basicConfig(filename=LOG_FILE,
                             filemode='a',
                             format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
@@ -58,6 +58,7 @@ def main():
         creedentials['user']['password']
         creedentials['chatbot']['username']
         creedentials['chatbot']['password']
+        #  pylint: enable=pointless-statement
     except FileNotFoundError:
         logger.error('File with the credentials (%s) was not found', AGENT_CREDENTIALS_FILE)
         traceback_logger.error('', exc_info=True)

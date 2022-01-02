@@ -1,7 +1,9 @@
 import logging
 # The following import makes arrows work properly
 # when writing an input
-import readline #  pylint: disable=unused-import
+#  pylint: disable=unused-import
+import readline
+#  pylint: enable=unused-import
 from spade import agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour

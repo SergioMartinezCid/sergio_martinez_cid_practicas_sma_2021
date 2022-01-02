@@ -15,11 +15,12 @@ def get_default_functionality_regex():
             'functionality': Functionality.SHOW_TIME},
         {'regex': r'\s*who\s+is\s+(\S.*?)\s*\??\s*$',
             'functionality': Functionality.SEARCH_PERSON_INFO},
-        {'regex': r'\s*(?:create|make)\s+file\s+\'(\S.*)\'\s*$',
+        {'regex':
+            r'\s*(?:create|make)\s+file\s+(?:named\s+)?\'(.+?)\'(?:\s+containing\s+\'(.+?)\')?\s*$',
             'functionality': Functionality.MAKE_FILE},
         {'regex': r'\s*download\s+(\d+|some)\s+gifs\s+(?:about|of)\s+(\S.*)\s*$',
             'functionality': Functionality.DOWNLOAD_GIFS},
-        {'regex': r'\s*tell\s+(?:me\s+)?a\s+(new\s+|)joke\s*$',
+        {'regex': r'\s*tell\s+(?:me\s+)?a\s+(new\s+)?joke\s*$',
             'functionality': Functionality.TELL_JOKE},
         {'regex': r'\s*exit\s*$',
             'functionality': Functionality.SEND_EXIT},
@@ -38,13 +39,13 @@ def get_answers():
 
         # Available functionality
         {'id': 'AVAILABLE_FUNCTIONALITY', 'text': '''I can do the following things
-    Show you this message: "What can you do?"
-    Show you the time: "Show me the time"
-    Look for information about someone: "Who is Barack Obama"
-    Create an empty file: "Create file 'Very important file'" /  "Make file 'Very important file'"
-    Download gifs: "Download 10 gifs of potatoes" /  "Download some gifs of potatoes"
-    Tell a joke: "Tell me a joke" / "Tell me a new joke" 
-    End the execution: "exit"'''},
+    Show you this message: What can you do?
+    Show you the time: Show me the time
+    Look for information about someone: Who is Barack Obama
+    Create an empty file: Create file 'filename' /  Create file 'filename' containing 'content'
+    Download gifs: Download 10 gifs of potatoes /  Download some gifs of potatoes
+    Tell a joke: Tell me a joke / Tell me a new joke 
+    End the execution: exit'''},
 
         # Show time
         {'id': 'SHOW_TIME_F', 'text': 'The time is {time}'},

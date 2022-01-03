@@ -1,10 +1,10 @@
+from datetime import datetime
 import json
 import logging
 import re
 import urllib
 from functools import reduce
 from pathlib import Path
-from time import gmtime, strftime
 import requests
 from bs4 import BeautifulSoup
 from spade import agent
@@ -122,7 +122,7 @@ class ShowTimeBehaviour(OneShotBehaviour):
     async def run(self):
         logger.debug('Sending current time')
         await self.agent.send_response_message(self,
-            la['SHOW_TIME_F'].format(time=strftime("%d-%m-%Y %H:%M:%S", gmtime())))
+            la['SHOW_TIME_F'].format(time= datetime.now().strftime("%d-%m-%Y %H:%M:%S")))
 
 class SearchPersonInfoBehaviour(OneShotBehaviour):
     def __init__(self, groups):

@@ -9,9 +9,9 @@ from spade.message import Message
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.template import Template
 from .loaded_answers import loaded_answers as la
-from .const import LOGGER_NAME, TIMEOUT_SECONDS
+from .const import TIMEOUT_SECONDS, USER_LOGGER_NAME
 
-logger = logging.getLogger(LOGGER_NAME)
+logger = logging.getLogger(USER_LOGGER_NAME)
 
 class UserAgent(agent.Agent):
     def __init__(self, jid, password, chatbot_address, verify_security=False):

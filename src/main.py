@@ -5,26 +5,42 @@ import logging
 from spade import quit_spade
 from sqlalchemy.exc import DatabaseError
 from app.chatbot_agent import ChatbotAgent
-from app.const import AGENT_CREDENTIALS_FILE, API_KEYS_FILE, LOG_FILE, \
-    LOGGER_NAME, TRACEBACK_LOGGER_NAME
+from app.const import AGENT_CREDENTIALS_FILE, API_KEYS_FILE, \
+    DEFAULT_LOG_FILE, CHATBOT_LOG_FILE, APP_LOGGER_NAME, TRACEBACK_LOGGER_NAME
 from app.database import db
 from app.exceptions import InitFailedException
 from app.loaded_answers import loaded_answers as la
 from app.user_agent import UserAgent
 
-logger = logging.getLogger(LOGGER_NAME)
+logger = logging.getLogger(APP_LOGGER_NAME)
 traceback_logger = logging.getLogger(TRACEBACK_LOGGER_NAME)
 
 def main():
-    # Configure logging
+    # Configure library loggers
     file_log_level = logging.DEBUG
-    logging.basicConfig(filename=LOG_FILE,
+    logging.basicConfig(filename=DEFAULT_LOG_FILE,
                             filemode='a',
                             format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                             datefmt='%H:%M:%S',
                             level=file_log_level)
-    logging.getLogger('sqlalchemy').setLevel(file_log_level)
 
+    logging.getLogger('user').handlers.clear()
+    logging.getLogger('user.StanzaStream').handlers.clear()
+
+    # Configure app loggers
+    logger.handlers.clear()
+    traceback_logger.handlers.clear()
+
+    # App logs go to a separate file
+    file_handler = logging.FileHandler(CHATBOT_LOG_FILE)
+    file_handler.setLevel(file_log_level)
+    formatter = logging.Formatter('%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s')
+    formatter.datefmt = '%H:%M:%S'
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    traceback_logger.addHandler(file_handler)
+
+    # Additionally, log warnings to the console
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.WARNING)
     logger.addHandler(stream_handler)

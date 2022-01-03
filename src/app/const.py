@@ -1,10 +1,13 @@
-LOG_FILE = '/opt/logs/logs.txt'
+DEFAULT_LOG_FILE = '/opt/logs/logs.txt'
+CHATBOT_LOG_FILE = '/opt/logs/chatbot-logs.txt'
 AGENT_CREDENTIALS_FILE = 'app/credentials/agent_credentials.json'
 DB_CREDENTIALS_FILE = 'app/credentials/db_credentials.json'
 API_KEYS_FILE = 'app/credentials/api_keys.json'
 DEFAULT_JOKES_FILE = 'app/database/default_jokes.txt'
 ENVIRONMENT_FOLDER = '/opt/environment'
-LOGGER_NAME = 'chatbot'
+APP_LOGGER_NAME = 'chatbot'
+CHATBOT_LOGGER_NAME = 'chatbot.chatbot'
+USER_LOGGER_NAME = 'chatbot.user'
 TRACEBACK_LOGGER_NAME = 'chatbot-traceback'
 TIMEOUT_SECONDS = 120
 DEFAULT_GIF_COUNT = 5

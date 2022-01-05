@@ -135,7 +135,8 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
             f'?search={urllib.parse.quote(self.name)}')
         if res.status_code != 200:
             logger.debug('Failed to reach server, code %s', res.status_code)
-            await self.agent.send_response_message(self, la['NETWORK_ERROR'])
+            await self.agent.send_response_message(self,
+                la['NETWORK_ERROR'], performative='failure')
             return
         html = BeautifulSoup(res.content, 'html.parser')
 
@@ -143,7 +144,7 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
         if html.find('div', {'id': 'disambigbox'}) is not None:
             logger.debug('An ambiguous result was found')
             await self.agent.send_response_message(self,
-                la['AMBIGUOUS_PERSON_F'].format(name=self.name))
+                la['AMBIGUOUS_PERSON_F'].format(name=self.name), performative='failure')
             return
 
         content_text = html.find('div', {'id': 'mw-content-text'})
@@ -166,7 +167,7 @@ class SearchPersonInfoBehaviour(OneShotBehaviour):
                     re.sub(r'\[[^\[]*\]', '', first_paragraph.text).strip())
                 return
         await self.agent.send_response_message(self,
-            la['NO_INFORMATION_PERSON_F'].format(name=self.name))
+            la['NO_INFORMATION_PERSON_F'].format(name=self.name), performative='failure')
 
 class MakeFileBehaviour(OneShotBehaviour):
     def __init__(self, groups):
@@ -177,6 +178,7 @@ class MakeFileBehaviour(OneShotBehaviour):
     async def run(self):
         file = Path(f'{ENVIRONMENT_FOLDER}/{self.name}')
         parent_folder = Path(ENVIRONMENT_FOLDER).resolve()
+        performative = 'failure'
 
         try:
             if Path(self.name).is_absolute(): # Check if input was an absolute path
@@ -201,11 +203,12 @@ class MakeFileBehaviour(OneShotBehaviour):
                     if self.file_contents is not None:
                         file.write(self.file_contents)
                 message_body = la['CREATE_FILE_SUCCESS_F'].format(name=self.name)
+                performative = 'inform'
         except OSError as error:
             logger.info('Unexpected error: %s', str(error))
             traceback_logger.info('', stack_info=True)
             message_body = error.strerror
-        await self.agent.send_response_message(self, message_body)
+        await self.agent.send_response_message(self, message_body, performative=performative)
 
 class DownloadGifsBehaviour(OneShotBehaviour):
     def __init__(self, groups):
@@ -216,7 +219,8 @@ class DownloadGifsBehaviour(OneShotBehaviour):
 
     async def run(self):
         if self.gif_count > MAX_GIF_COUNT:
-            await self.agent.send_response_message(self, la['MAX_GIF_COUNT'])
+            await self.agent.send_response_message(self,
+                la['MAX_GIF_COUNT'], performative='failure')
             return
 
         res = requests.get(self.agent.search_gifs_url +
@@ -224,14 +228,15 @@ class DownloadGifsBehaviour(OneShotBehaviour):
                     '&contentfilter=medium&media_filter=minimal')
         if res.status_code != 200:
             logger.debug('Failed to reach server, code %s', res.status_code)
-            await self.agent.send_response_message(self, la['NETWORK_ERROR'])
+            await self.agent.send_response_message(self,
+                la['NETWORK_ERROR'], performative='failure')
             return
 
         results = res.json()['results']
 
         if len(results) <= 0:
             await self.agent.send_response_message(self,
-                la['NO_RESULTS_F'].format(search_term=self.search_text))
+                la['NO_RESULTS_F'].format(search_term=self.search_text), performative='failure')
             return
 
         folder_name = ''.join(x if x.isalnum() or x in '-_.() ' else '_' for x in self.search_text)
@@ -240,7 +245,8 @@ class DownloadGifsBehaviour(OneShotBehaviour):
             res = requests.get(result_url, stream=True)
 
             if res.status_code != 200:
-                await self.agent.send_response_message(self, la['NETWORK_ERROR'])
+                await self.agent.send_response_message(self,
+                    la['NETWORK_ERROR'], performative='failure')
                 return
 
             gif_path = Path(f'{ENVIRONMENT_FOLDER}/{folder_name}/{index+1}.gif').resolve()
@@ -273,7 +279,7 @@ class TellJokeBehaviour(OneShotBehaviour):
             if joke_row is None:
                 error_message = la['ERROR_NO_NEW_JOKES'] if self.is_new else \
                                 la['ERROR_NO_JOKES']
-                await self.agent.send_response_message(self,error_message)
+                await self.agent.send_response_message(self,error_message, performative='failure')
             else:
                 joke = joke_row[0]
                 logger.debug('Marking joke as old in the database')
@@ -289,4 +295,5 @@ class SendExitBehaviour(OneShotBehaviour):
 
 class NotUnderstoodBehaviour(OneShotBehaviour):
     async def run(self):
-        await self.agent.send_response_message(self, la['MESSAGE_NOT_UNDERSTOOD'])
+        await self.agent.send_response_message(self,
+            la['MESSAGE_NOT_UNDERSTOOD'], performative='failure')

@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime
 # The following import makes arrows work properly
 # when writing an input
 #  pylint: disable=unused-import
@@ -8,7 +7,7 @@ import readline
 from spade import agent
 from spade.message import Message
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
-from spade.template import Template
+from spade.template import ORTemplate, Template
 from .loaded_answers import loaded_answers as la
 from .const import APP_LOGGER_NAME, TIMEOUT_SECONDS, USER_LOGGER_NAME
 
@@ -42,9 +41,13 @@ class AwaitGreetingBehaviour(OneShotBehaviour):
         logger.debug('Received chatbot greeting')
         print(la['BOT_ANSWER_F'].format(response=response.body))
 
-        template = Template()
-        template.set_metadata('performative', 'inform')
-        template.set_metadata('language', 'chatbot-response')
+        template_success = Template()
+        template_success.set_metadata('performative', 'inform')
+        template_success.set_metadata('language', 'chatbot-response')
+        template_failure = Template()
+        template_failure.set_metadata('performative', 'failure')
+        template_failure.set_metadata('language', 'chatbot-response')
+        template = ORTemplate(template_success, template_failure)
         self.agent.add_behaviour(AssistUserBehaviour(), template)
 
 class AssistUserBehaviour(CyclicBehaviour):

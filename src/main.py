@@ -5,14 +5,15 @@ import logging
 from spade import quit_spade
 from sqlalchemy.exc import DatabaseError
 from app.chatbot_agent import ChatbotAgent
-from app.const import AGENT_CREDENTIALS_FILE, API_KEYS_FILE, \
-    DEFAULT_LOG_FILE, CHATBOT_LOG_FILE, APP_LOGGER_NAME, TRACEBACK_LOGGER_NAME
+from app.const import AGENT_CREDENTIALS_FILE, API_KEYS_FILE, DEFAULT_LOG_FILE, CHATBOT_LOG_FILE, \
+    APP_LOGGER_NAME, MAIN_LOGGER_NAME, CHATBOT_LOGGER_NAME, USER_LOGGER_NAME, TRACEBACK_LOGGER_NAME
 from app.database import db
 from app.exceptions import InitFailedException
 from app.loaded_answers import loaded_answers as la
 from app.user_agent import UserAgent
 
-logger = logging.getLogger(APP_LOGGER_NAME)
+module_logger = logging.getLogger(APP_LOGGER_NAME)
+logger = module_logger.getChild(MAIN_LOGGER_NAME)
 traceback_logger = logger.getChild(TRACEBACK_LOGGER_NAME)
 
 def main():
@@ -37,10 +38,12 @@ def main():
     logger.addHandler(file_handler)
     traceback_logger.addHandler(file_handler)
 
-    # Additionally, log warnings to the console
+    # Additionally, log errors to the console, if they are from any of the child loggers
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.ERROR)
     logger.addHandler(stream_handler)
+    module_logger.getChild(CHATBOT_LOGGER_NAME).addHandler(stream_handler)
+    module_logger.getChild(USER_LOGGER_NAME).addHandler(stream_handler)
 
     # Load the database
     try:

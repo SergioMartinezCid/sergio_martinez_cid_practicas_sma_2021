@@ -20,7 +20,7 @@ from .database import db, BaseUrl, FunctionalityRegex, Joke
 from .functionality import Functionality
 
 logger = logging.getLogger(APP_LOGGER_NAME).getChild(CHATBOT_LOGGER_NAME)
-traceback_logger = logging.getLogger(TRACEBACK_LOGGER_NAME)
+traceback_logger = logging.getLogger(APP_LOGGER_NAME).getChild(TRACEBACK_LOGGER_NAME)
 
 class ChatbotAgent(agent.Agent):
     def __init__(self, jid, password, user_address, verify_security=False):

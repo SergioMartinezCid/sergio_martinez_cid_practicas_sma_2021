@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 # The following import makes arrows work properly
 # when writing an input
 #  pylint: disable=unused-import
@@ -9,9 +10,9 @@ from spade.message import Message
 from spade.behaviour import CyclicBehaviour, OneShotBehaviour
 from spade.template import Template
 from .loaded_answers import loaded_answers as la
-from .const import TIMEOUT_SECONDS, USER_LOGGER_NAME
+from .const import APP_LOGGER_NAME, TIMEOUT_SECONDS, USER_LOGGER_NAME
 
-logger = logging.getLogger(USER_LOGGER_NAME)
+logger = logging.getLogger(APP_LOGGER_NAME).getChild(USER_LOGGER_NAME)
 
 class UserAgent(agent.Agent):
     def __init__(self, jid, password, chatbot_address, verify_security=False):

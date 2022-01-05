@@ -13,7 +13,7 @@ from app.loaded_answers import loaded_answers as la
 from app.user_agent import UserAgent
 
 logger = logging.getLogger(APP_LOGGER_NAME)
-traceback_logger = logging.getLogger(TRACEBACK_LOGGER_NAME)
+traceback_logger = logger.getChild(TRACEBACK_LOGGER_NAME)
 
 def main():
     # Configure library loggers
@@ -23,9 +23,6 @@ def main():
                             format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                             datefmt='%H:%M:%S',
                             level=file_log_level)
-
-    logging.getLogger('user').handlers.clear()
-    logging.getLogger('user.StanzaStream').handlers.clear()
 
     # Configure app loggers
     logger.handlers.clear()
@@ -42,7 +39,7 @@ def main():
 
     # Additionally, log warnings to the console
     stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.WARNING)
+    stream_handler.setLevel(logging.ERROR)
     logger.addHandler(stream_handler)
 
     # Load the database

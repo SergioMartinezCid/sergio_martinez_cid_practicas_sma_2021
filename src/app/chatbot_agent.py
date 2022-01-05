@@ -14,12 +14,12 @@ from spade.template import Template
 from sqlalchemy.sql.expression import select, func
 from app.exceptions import InitFailedException
 from .loaded_answers import loaded_answers as la
-from .const import API_KEYS_FILE, CHATBOT_LOGGER_NAME, ENVIRONMENT_FOLDER, \
+from .const import API_KEYS_FILE, APP_LOGGER_NAME, CHATBOT_LOGGER_NAME, ENVIRONMENT_FOLDER, \
     DEFAULT_GIF_COUNT, MAX_GIF_COUNT, TIMEOUT_SECONDS, TRACEBACK_LOGGER_NAME
 from .database import db, BaseUrl, FunctionalityRegex, Joke
 from .functionality import Functionality
 
-logger = logging.getLogger(CHATBOT_LOGGER_NAME)
+logger = logging.getLogger(APP_LOGGER_NAME).getChild(CHATBOT_LOGGER_NAME)
 traceback_logger = logging.getLogger(TRACEBACK_LOGGER_NAME)
 
 class ChatbotAgent(agent.Agent):

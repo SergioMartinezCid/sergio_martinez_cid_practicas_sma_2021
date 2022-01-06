@@ -12,8 +12,7 @@ from app.exceptions import InitFailedException
 from app.loaded_answers import loaded_answers as la
 from app.user_agent import UserAgent
 
-module_logger = logging.getLogger(APP_LOGGER_NAME)
-logger = module_logger.getChild(MAIN_LOGGER_NAME)
+logger = logging.getLogger(APP_LOGGER_NAME).getChild(MAIN_LOGGER_NAME)
 traceback_logger = logger.getChild(TRACEBACK_LOGGER_NAME)
 
 def main():
@@ -26,8 +25,8 @@ def main():
                             level=file_log_level)
 
     # Configure app loggers
-    logger.handlers.clear()
-    traceback_logger.handlers.clear()
+    chatbot_logger = logging.getLogger(APP_LOGGER_NAME).getChild(CHATBOT_LOGGER_NAME)
+    user_logger = logging.getLogger(APP_LOGGER_NAME).getChild(USER_LOGGER_NAME)
 
     # App logs go to a separate file
     file_handler = logging.FileHandler(CHATBOT_LOG_FILE)
@@ -36,14 +35,16 @@ def main():
     formatter.datefmt = '%H:%M:%S'
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
+    chatbot_logger.addHandler(file_handler)
+    user_logger.addHandler(file_handler)
     traceback_logger.addHandler(file_handler)
 
     # Additionally, log errors to the console, if they are from any of the child loggers
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.ERROR)
     logger.addHandler(stream_handler)
-    module_logger.getChild(CHATBOT_LOGGER_NAME).addHandler(stream_handler)
-    module_logger.getChild(USER_LOGGER_NAME).addHandler(stream_handler)
+    chatbot_logger.addHandler(stream_handler)
+    user_logger.addHandler(stream_handler)
 
     # Load the database
     try:

@@ -265,7 +265,7 @@ class DownloadGifsBehaviour(OneShotBehaviour):
 class TellJokeBehaviour(OneShotBehaviour):
     def __init__(self, groups):
         super().__init__()
-        self.is_new = len(groups) > 0
+        self.is_new = groups[0] is not None
 
     async def run(self):
         stmt = select(Joke).order_by(func.random()).limit(1)
